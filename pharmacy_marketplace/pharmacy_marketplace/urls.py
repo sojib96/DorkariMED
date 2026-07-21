@@ -11,6 +11,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from core.health import health_check
+
 # ── API v1 ──────────────────────────────────────────────────────────────────
 api_v1_patterns = [
     path("accounts/", include("accounts.urls.api", namespace="api-accounts")),
@@ -42,8 +44,6 @@ i18n_patterns = [
 ]
 
 # ── Health check ────────────────────────────────────────────────────────────
-from core.health import health_check
-
 health_patterns = [
     path("health/", health_check, name="health-check"),
 ]

@@ -5,7 +5,6 @@ Shared settings used by all environments. Environment-specific overrides
 go in dev.py, staging.py, or production.py.
 """
 
-import os
 from pathlib import Path
 
 import environ

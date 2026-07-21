@@ -4,8 +4,8 @@ Health-check endpoint for Docker/load-balancer probing.
 Returns 200 OK with JSON status if the application is running.
 """
 
-from django.http import JsonResponse
 from django.db import connection
+from django.http import JsonResponse
 
 
 def health_check(request):

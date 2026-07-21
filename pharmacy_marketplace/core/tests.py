@@ -1,7 +1,7 @@
 """Tests for the core app — pagination, exception handler, health check."""
 
-from django.test import TestCase, RequestFactory
 from django.http import JsonResponse
+from django.test import RequestFactory, TestCase
 
 from core.health import health_check
 
