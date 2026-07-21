@@ -1,0 +1,176 @@
+/* =========================================================================
+   Base styles — shared across all three surfaces (customer, owner, admin)
+   ========================================================================= */
+:root {
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-400: #9ca3af;
+  --color-gray-600: #4b5563;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  --font-sans: system-ui, -apple-system, sans-serif;
+  --radius: 0.5rem;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-gray-900);
+  background: var(--color-gray-50);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header,
+.owner-header,
+.admin-header {
+  background: #fff;
+  border-bottom: 1px solid var(--color-gray-200);
+  padding: 0.75rem 0;
+}
+
+.site-header .container,
+.owner-header .container,
+.admin-header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--color-gray-900);
+}
+
+.main-nav a,
+.owner-header nav a,
+.admin-header nav a {
+  margin-left: 1.5rem;
+  color: var(--color-gray-600);
+  font-size: 0.9rem;
+}
+
+.main-nav a:hover,
+.owner-header nav a:hover,
+.admin-header nav a:hover {
+  color: var(--color-primary);
+}
+
+/* ── Main content ──────────────────────────────────────────────────────── */
+main {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+/* ── Messages ──────────────────────────────────────────────────────────── */
+.messages {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.message {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.message-success { background: #dcfce7; color: #166534; }
+.message-error   { background: #fee2e2; color: #991b1b; }
+.message-warning { background: #fef3c7; color: #92400e; }
+.message-info    { background: #dbeafe; color: #1e40af; }
+
+.message-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.site-footer {
+  background: #fff;
+  border-top: 1px solid var(--color-gray-200);
+  padding: 1.5rem 0;
+  text-align: center;
+  color: var(--color-gray-400);
+  font-size: 0.85rem;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+.card {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+}
+
+.card h2 {
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+}
+
+.card p {
+  color: var(--color-gray-600);
+  font-size: 0.9rem;
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* ── Utilities ─────────────────────────────────────────────────────────── */
+.text-center { text-align: center; }
+.mt-4 { margin-top: 1rem; }
+.mb-4 { margin-bottom: 1rem; }

@@ -1,0 +1,22 @@
+{
+  "@@locale": "bn",
+  "appTitle": "ফার্মেসি মার্কেটপ্লেস",
+  "homeTitle": "আপনার কাছে ওষুধ খুঁজুন",
+  "searchHint": "ওষুধ অনুসন্ধান...",
+  "login": "লগইন",
+  "register": "নিবন্ধন",
+  "logout": "লগআউট",
+  "phoneNumber": "ফোন নম্বর",
+  "password": "পাসওয়ার্ড",
+  "submit": "জমা দিন",
+  "cancel": "বাতিল",
+  "loading": "লোড হচ্ছে...",
+  "error": "একটি ত্রুটি ঘটেছে",
+  "noResults": "কোন ফলাফল পাওয়া যায়নি",
+  "sortByPrice": "মূল্য অনুযায়ী সাজান",
+  "filterByAvailability": "প্রাপ্যতা অনুযায়ী ফিল্টার",
+  "price": "মূল্য",
+  "distance": "দূরত্ব",
+  "available": "পাওয়া যায়",
+  "notAvailable": "পাওয়া যায় না"
+}

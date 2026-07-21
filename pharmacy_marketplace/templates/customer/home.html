@@ -1,0 +1,21 @@
+{% extends "customer/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Find Medicines Near You" %} — Pharmacy Marketplace{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>{% trans "Find medicines at nearby pharmacies" %}</h1>
+  <p>{% trans "Compare prices and discover which pharmacy has what you need." %}</p>
+  <div class="search-box">
+    <form hx-get="{% url 'web-search:search' %}" hx-target="#search-results" hx-trigger="submit">
+      <input type="text" name="q" placeholder="{% trans 'Search medicines...' %}" aria-label="{% trans 'Search medicines' %}">
+      <button type="submit">{% trans "Search" %}</button>
+    </form>
+  </div>
+</section>
+
+<section id="search-results" class="search-results">
+  <!-- Results loaded via htmx -->
+</section>
+{% endblock %}

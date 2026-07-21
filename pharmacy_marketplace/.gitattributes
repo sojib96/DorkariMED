@@ -1,0 +1,42 @@
+# Auto-detect text files and normalize line endings to LF
+* text=auto
+
+# Python source files
+*.py text diff=python
+
+# HTML/Django templates
+*.html text diff=html
+
+# CSS
+*.css text diff=css
+
+# JavaScript
+*.js text diff=javascript
+
+# Dart/Flutter
+*.dart text diff=dart
+
+# YAML
+*.yaml text
+*.yml text
+
+# Markdown
+*.md text diff=markdown
+
+# Config files
+*.toml text
+*.cfg text
+*.ini text
+
+# Environment files (never committed)
+.env.example text
+
+# Binary/static assets (keep as-is)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+*.woff binary
+*.woff2 binary

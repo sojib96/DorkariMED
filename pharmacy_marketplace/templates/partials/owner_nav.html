@@ -1,0 +1,11 @@
+<header class="owner-header" role="banner">
+  <div class="container">
+    <a href="{% url 'owner:dashboard' %}" class="logo">PharmacyMarket — Owner</a>
+    <nav aria-label="Owner navigation">
+      <a href="{% url 'owner:dashboard' %}">Dashboard</a>
+      <a href="{% url 'owner-catalog:listing-list' %}">Medicines</a>
+      <a href="{% url 'owner:profile' %}">Profile</a>
+      <a href="{% url 'store:home' %}" target="_blank">View Storefront</a>
+    </nav>
+  </div>
+</header>

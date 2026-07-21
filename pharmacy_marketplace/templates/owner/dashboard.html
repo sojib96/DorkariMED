@@ -1,0 +1,22 @@
+{% extends "owner/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Owner Dashboard" %} — Pharmacy Marketplace{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <h1>{% trans "My Pharmacy" %}</h1>
+  <p>{% trans "Manage your storefront, medicine listings, and settings." %}</p>
+
+  <div class="dashboard-cards">
+    <a href="{% url 'owner-catalog:listing-list' %}" class="card">
+      <h2>{% trans "Medicine Listings" %}</h2>
+      <p>{% trans "View and manage your listed medicines" %}</p>
+    </a>
+    <a href="{% url 'owner:profile' %}" class="card">
+      <h2>{% trans "Pharmacy Profile" %}</h2>
+      <p>{% trans "Update your pharmacy details and hours" %}</p>
+    </a>
+  </div>
+</section>
+{% endblock %}

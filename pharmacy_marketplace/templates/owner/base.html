@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block body_class %}owner-dashboard{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/owner.css' %}">
+{% endblock %}
+
+{% block header %}
+  {% include "partials/owner_nav.html" %}
+{% endblock %}

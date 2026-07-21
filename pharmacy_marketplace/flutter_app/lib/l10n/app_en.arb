@@ -1,0 +1,22 @@
+{
+  "@@locale": "en",
+  "appTitle": "Pharmacy Marketplace",
+  "homeTitle": "Find Medicines Near You",
+  "searchHint": "Search medicines...",
+  "login": "Login",
+  "register": "Register",
+  "logout": "Logout",
+  "phoneNumber": "Phone Number",
+  "password": "Password",
+  "submit": "Submit",
+  "cancel": "Cancel",
+  "loading": "Loading...",
+  "error": "An error occurred",
+  "noResults": "No results found",
+  "sortByPrice": "Sort by Price",
+  "filterByAvailability": "Filter by Availability",
+  "price": "Price",
+  "distance": "Distance",
+  "available": "Available",
+  "notAvailable": "Not Available"
+}

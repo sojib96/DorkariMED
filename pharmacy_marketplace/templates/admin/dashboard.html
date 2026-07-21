@@ -1,0 +1,22 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Admin Dashboard" %} — Pharmacy Marketplace{% endblock %}
+
+{% block content %}
+<section class="dashboard">
+  <h1>{% trans "Admin Dashboard" %}</h1>
+  <p>{% trans "Platform overview and management tools." %}</p>
+
+  <div class="dashboard-cards">
+    <a href="{% url 'admin-catalog:normalization-list' %}" class="card">
+      <h2>{% trans "Catalog Normalization" %}</h2>
+      <p>{% trans "Review and normalize unlisted medicine entries" %}</p>
+    </a>
+    <a href="{% url 'admin:index' %}" class="card">
+      <h2>{% trans "Django Admin" %}</h2>
+      <p>{% trans "Full database administration interface" %}</p>
+    </a>
+  </div>
+</section>
+{% endblock %}
