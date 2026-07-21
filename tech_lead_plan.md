@@ -1,10 +1,14 @@
 # Tech Lead — Phased Implementation Plan: Module 1
 
-> **Status:** Draft — awaiting client review  
+> **Status:** Active — updated 21 Jul 2026 (scope change: web-first, Android deferred)  
 > **Date:** July 2026  
 > **Author:** Tech Lead  
 > **Reference documents:** `srs-module1.md` (final), `architect.md` (final)  
 > **Document purpose:** Defines the phase breakdown, setup tasks, and sequencing rationale for building Module 1. This is a planning-only document — no application code is written yet. After this plan is approved, I execute the setup phase, then hand off to Backend and Frontend Specialists per the phased workflow.
+
+---
+
+> **Scope Change (21 Jul 2026):** Per client decision, this development cycle builds **web surfaces only** (Django + htmx + Alpine.js) across all three phases. Flutter/Android work is **deferred** to a dedicated Android cycle after the client signs off on the complete web version. All Flutter-specific tasks below are marked with **"Deferred — Android Cycle (Future)"** rather than deleted; the task breakdown, FR mappings, and architecture remain valid for reuse. Backend API work is unaffected — the same REST endpoints serve both clients identically.
 
 ---
 
@@ -19,12 +23,16 @@ Phase 1: Foundation ────────────────────
         │  accounts.User model                                    │  MasterMedicine model                                    │  search app (reads from catalog + pharmacies)
         │  JWT auth / registration                                │  PharmacyMedicineListing (THE PIVOT)                      │  geospatial radius queries
         │  Pharmacy model + storefront                            │  Listing CRUD + bulk CSV upload                           │  medicine + pharmacy search
-        │  Flutter + web auth screens                             │  Admin Django admin normalization                         │  price comparison views
-        └──────────────────────────                               │  Pharmacy owner catalog management UI                    │  notifications app ("notify me")
-                                                                  └──────────────────────────                                 │  Flutter customer screens
-                                                                                                                             │  Customer website (htmx)
-                                                                                                                             │  Admin dashboard stats
-                                                                                                                             └──────────────────────────
+        │  ─── WEB AUTH SCREENS ONLY ───                         │  Admin Django admin normalization                         │  price comparison views
+        │  (Flutter deferred)                                     │  Pharmacy owner catalog management UI                    │  notifications app ("notify me")
+        └──────────────────────────                               │  (Flutter placeholder deferred)                           │  ─── CUSTOMER WEBSITE (htmx) ONLY ───
+                                                                  └──────────────────────────                                 │  Admin dashboard stats
+                                                                                                                              │  (Flutter screens deferred)
+                                                                                                                              └──────────────────────────
+
+Note: Web-only for this cycle per client decision (21 Jul 2026).
+Flutter/Android work deferred to a dedicated Android cycle.
+All backend API tasks proceed unchanged — same REST endpoints serve both.
 ```
 
 **Why this ordering:**
@@ -39,9 +47,9 @@ Phase 1: Foundation ────────────────────
 
 Each phase is designed to produce a coherent, independently testable capability:
 
-- **Phase 1:** "I can register as a pharmacy owner and see my storefront." ≈ 7–10 days for Backend + 5–7 days for Frontend
-- **Phase 2:** "I can list medicines in my storefront and admin can normalize entries." ≈ 5–7 days for Backend + 5–7 days for Frontend  
-- **Phase 3:** "A customer can find nearby pharmacies and compare medicine prices." ≈ 5–7 days for Backend + 7–10 days for Frontend
+- **Phase 1:** "I can register as a pharmacy owner and see my storefront." ≈ 7–10 days for Backend + 5–7 days for Web Frontend (Flutter deferred)
+- **Phase 2:** "I can list medicines in my storefront and admin can normalize entries." ≈ 5–7 days for Backend + 5–7 days for Web Frontend (Flutter deferred)
+- **Phase 3:** "A customer can find nearby pharmacies and compare medicine prices." ≈ 5–7 days for Backend + 7–10 days for Web Frontend (Flutter deferred)
 
 All estimates are planning ranges — the review process will refine them. If any phase grows beyond ~10 working days of specialist effort, it should be split further during execution.
 
@@ -112,7 +120,7 @@ At the end of this phase, a pharmacy owner can register, log in, create their st
 | B1-02 | Implement `accounts` serializers: `CustomerRegistrationSerializer` (phone, full_name, password), `PharmacyOwnerRegistrationSerializer` (phone, full_name, password + nested pharmacy data), `LoginSerializer`, `UserProfileSerializer`. | `accounts/serializers.py` | FR-01, FR-03 |
 | B1-03 | Implement `accounts` views: `CustomerRegistrationView`, `PharmacyOwnerRegistrationView`, `LoginView` (returns JWT access + refresh), `TokenRefreshView`, `UserProfileView`. All use DRF generic views or ViewSets. | `accounts/views.py` | FR-01, FR-03 |
 | B1-04 | Implement `accounts` URLs: register under `/api/v1/auth/` as specified in architect.md Section 5.2. | `accounts/urls.py` | |
-| B1-05 | Configure `djangorestframework-simplejwt`: access token 15min, refresh token 7 days, token obtained from login view. | `settings/base.py` | architect.md Section 5.2 |
+| B1-05 | Configure `djangorestframework-simplejwt`: access token 15min, refresh token 7 days, token obtained from login view. **Add DRF throttling on auth endpoints:** login endpoint throttled at ~5-10 req/min per IP; registration endpoint at ~5 req/min per IP (using `AnonRateThrottle` or a custom scoped throttle class). Implement as a separate throttling config that the Backend Specialist applies to the auth views — exact values within the 3–15 range are at the Backend Specialist's judgment. | `settings/base.py` | architect.md Section 5.2; client decision 21 Jul 2026 |
 | B1-06 | Implement `pharmacies` models: `Pharmacy` with fields per architect.md Section 4.1 (`name`, `owner_id` FK to User, `address_line`, `city`, `division`, `location` as `PointField` from GeoDjango, `dgda_license_number`, `pharmacist_name`, `pharmacist_registration_number`, `operating_hours` as JSONField, `phone`, `status` CharField, `is_verified` boolean (default False)). Create PostGIS GIST index on `location`. | `pharmacies/models.py` | FR-01, FR-02, FR-06 |
 | B1-07 | Implement `pharmacies` serializers: `PharmacyRegistrationSerializer` (used nested in owner registration), `PharmacyDetailSerializer` (public view — no sensitive fields), `PharmacyUpdateSerializer`, `PharmacyLocationSerializer`. Validate that required pharmacist fields are present. | `pharmacies/serializers.py` | FR-01, FR-02 |
 | B1-08 | Implement `pharmacies` views: `PharmacyCreateView` (POST, JWT-owner), `PharmacyDetailView` (GET, public — returns storefront data), `PharmacyUpdateView` (PATCH, JWT-owner), `PharmacyLocationUpdateView` (PATCH, JWT-owner — updates `location` PointField), `PharmacyDeactivateView` (PATCH, JWT-owner — sets status to `suspended`). | `pharmacies/views.py` | FR-04, FR-05, FR-06 |
@@ -122,25 +130,25 @@ At the end of this phase, a pharmacy owner can register, log in, create their st
 
 ### Frontend Sub-section
 
-**Branch:** `phase-1-frontend-auth`
+**Branch:** `phase-1-frontend-web-auth`
 
 | Task | Details | Files | FR Mapping |
 |---|---|---|---|
-| F1-01 | **Flutter:** Implement auth screens: `LoginScreen` (phone + password), `CustomerRegistrationScreen` (phone, full_name, password), `PharmacyOwnerRegistrationScreen` (phone, full_name, password, pharmacy_name, pharmacy_address, location map picker, license fields). Wire to `accounts` API endpoints. | `lib/screens/auth/` | FR-01, FR-03 |
-| F1-02 | **Flutter:** Implement `AuthService` (login, register, token storage in `flutter_secure_storage`, auto-refresh interceptor on `Dio`). | `lib/services/auth_service.dart` | |
-| F1-03 | **Flutter:** Implement navigation shell with guarded routes: unauthenticated → auth screens, authenticated → main app shell. `PharmacyOwnerRegistrationScreen` includes a map picker widget (using `flutter_map` with OpenStreetMap) for pinning location. | `lib/app.dart`, `lib/router.dart` | FR-02 |
+| F1-01 | **[Deferred — Android Cycle (Future)]** Flutter: Implement auth screens. | — | FR-01, FR-03 |
+| F1-02 | **[Deferred — Android Cycle (Future)]** Flutter: Implement `AuthService`. | — | |
+| F1-03 | **[Deferred — Android Cycle (Future)]** Flutter: Implement navigation shell with guarded routes. | — | FR-02 |
 | F1-04 | **Web (Django+htmx):** Create pharmacy owner registration page at `/owner/register/` with Django form + htmx (form submission replaces inline with a success message or validation errors). Include OpenStreetMap-based location picker (Leaflet.js via CDN). | `templates/owner/register.html` | FR-01, FR-02 |
 | F1-05 | **Web (Django+htmx):** Create pharmacy owner login page at `/owner/login/` using Django's built-in `LoginView` with custom template. | `templates/owner/login.html` | |
 | F1-06 | **Web (Django+htmx):** Create pharmacy owner dashboard shell at `/owner/dashboard/` with: sidebar navigation (Storefront, Medicines — disabled, grayed out for now), header with pharmacy name and status, main content area. This is a view-only placeholder — the actual storefront management comes in Phase 2. | `templates/owner/dashboard.html`, `templates/owner/base_dashboard.html` | FR-04 |
 | F1-07 | **Web (Django+htmx):** Create customer registration and login pages (same pattern as owner but simpler — no pharmacy fields). | `templates/customer/register.html`, `templates/customer/login.html` | FR-01, FR-03 |
-| F1-08 | **Flutter + Web:** Write integration tests for the full auth flow: register → login → token refresh → view protected endpoint. | Test files | |
+| F1-08 | **Web:** Write integration tests for the full auth flow: register → login → token refresh → view protected endpoint. | Test files | |
 
 ### Review & Fix Sub-section (Tech Lead)
 
 | Task | Details |
 |---|---|
 | R1-01 | Review Backend branch: verify User model uses phone as the unique identifier, JWT works end-to-end, Pharmacy model has the PostGIS PointField with correct GIST index, all API responses match the `{"error": {"code", "message", "details"}}` envelope format, no hardcoded strings. |
-| R1-02 | Review Frontend branch (Flutter): verify Riverpod setup, token storage is secure, navigation guards work, auth service uses the correct API endpoints. |
+| R1-02 | **[Deferred — Android Cycle (Future)]** Review Frontend branch (Flutter). |
 | R1-03 | Review Frontend branch (Web): verify Django template auth works, session cookies are HTTPOnly + Secure, htmx CSRF header is correctly configured, map picker saves lat/lng correctly. |
 | R1-04 | Fix any issues found in review. Re-review until clean. Merge to `main`. |
 
@@ -182,7 +190,7 @@ At the end of this phase, pharmacy owners can add, update, and bulk-upload medic
 | F2-03 | **Web (Django+htmx):** Bulk upload page at `/owner/medicines/bulk/`. File upload form with a downloadable CSV template button. On submit, htmx streams progress updates and final results (matched X, unmatched Y, errors in N rows). Display errors inline with row numbers. | `templates/owner/medicines_bulk.html` | FR-13 |
 | F2-04 | **Web (Django+htmx):** Admin normalization dashboard. Extend or create an admin-friendly view at `/admin/catalog/pharmacymedicinelisting/` using Django's built-in admin with the customizations from B2-06. Add a custom admin dashboard card showing "Pending normalization: {count}" with a direct link to filtered list view. | Django admin customization | FR-10, FR-34, FR-37 |
 | F2-05 | **Web (Django+htmx):** Admin master catalog management view via Django admin at `/admin/catalog/mastermedicine/` with search, filter, and inline add/edit. | Django admin (built-in) | FR-38 |
-| F2-06 | **Flutter:** Pharmacy owner screen (future — not needed in Module 1 since owners use the web dashboard. This can be a simple "Please use the web dashboard" message if accessed from mobile). | Placeholder only | |
+| F2-06 | **[Deferred — Android Cycle (Future)]** Flutter: Pharmacy owner screen. | — | |
 
 ### Review & Fix Sub-section (Tech Lead)
 
@@ -227,32 +235,32 @@ At the end of this phase, a customer can open the app or website, see nearby pha
 
 ### Frontend Sub-section
 
-**Branch:** `phase-3-frontend-discovery`
+**Branch:** `phase-3-frontend-web-discovery`
 
 | Task | Details | Files | FR Mapping |
 |---|---|---|---|
-| F3-01 | **Flutter:** Implement `LocationService` — requests location permission, gets current lat/lng, provides fallback for denied permission (manual text entry for location). | `lib/services/location_service.dart` | FR-15, FR-16 |
-| F3-02 | **Flutter:** Implement `PharmacyListView` — default screen showing pharmacy cards within 2 km radius. Cards show name, distance, operating hours, open/closed indicator. Pull-to-refresh. Radius filter selector (presets 1/2/5/10 km). Toggle between list and map view (using `flutter_map` with OpenStreetMap tiles). | `lib/screens/pharmacy_list.dart` | FR-15, FR-17, FR-18, FR-19 |
-| F3-03 | **Flutter:** Implement `MedicineSearchScreen` — search bar, debounced API calls (300ms), results grouped by medicine with lowest price, pharmacy count. Tap result → `MedicineDetailScreen`. | `lib/screens/medicine_search.dart` | FR-20, FR-21, FR-22 |
-| F3-04 | **Flutter:** Implement `MedicineDetailScreen` — medicine info header, comparison table (pharmacy name, distance, price columns), sorted by price. "View Pharmacy" button → pharmacy storefront. "Notify me when ordering available" button → triggers subscription flow. | `lib/screens/medicine_detail.dart` | FR-23, FR-24, FR-27 |
-| F3-05 | **Flutter:** Implement `PharmacyStorefrontScreen` — pharmacy info header, searchable list of medicines with prices, sortable by price/name. | `lib/screens/pharmacy_storefront.dart` | FR-31, FR-32, FR-33 |
-| F3-06 | **Flutter:** Implement `PharmacySearchScreen` — search bar for pharmacy name, results with distance + address, tap → pharmacy storefront. Filter by open now. | `lib/screens/pharmacy_search.dart` | FR-28, FR-29, FR-30 |
-| F3-07 | **Flutter:** Implement `NotifySubscriptionWidget` — inline in MedicineDetailScreen. If no user logged in → show email/phone input fields + submit button. If logged in → show "Notify me" button that uses registered contact. Show success confirmation after submission. | `lib/widgets/notify_subscription.dart` | FR-27 |
+| F3-01 | **[Deferred — Android Cycle (Future)]** Flutter: Implement `LocationService`. | — | FR-15, FR-16 |
+| F3-02 | **[Deferred — Android Cycle (Future)]** Flutter: Implement `PharmacyListView`. | — | FR-15, FR-17, FR-18, FR-19 |
+| F3-03 | **[Deferred — Android Cycle (Future)]** Flutter: Implement `MedicineSearchScreen`. | — | FR-20, FR-21, FR-22 |
+| F3-04 | **[Deferred — Android Cycle (Future)]** Flutter: Implement `MedicineDetailScreen`. | — | FR-23, FR-24, FR-27 |
+| F3-05 | **[Deferred — Android Cycle (Future)]** Flutter: Implement `PharmacyStorefrontScreen`. | — | FR-31, FR-32, FR-33 |
+| F3-06 | **[Deferred — Android Cycle (Future)]** Flutter: Implement `PharmacySearchScreen`. | — | FR-28, FR-29, FR-30 |
+| F3-07 | **[Deferred — Android Cycle (Future)]** Flutter: Implement `NotifySubscriptionWidget`. | — | FR-27 |
 | F3-08 | **Web (Django+htmx):** Customer website homepage — auto-detect location via browser Geolocation API, default view: list of pharmacies within 2 km. Map toggle. Radius filter. Use Django template + htmx partial updates for filtering and radius change (no full page reloads). | `templates/customer/home.html`, `templates/partials/_pharmacy_list.html` | FR-15, FR-17, FR-18, FR-19 |
 | F3-09 | **Web (Django+htmx):** Medicine search page — search input with htmx `hx-get` to search endpoint, results replace a `_search_results.html` partial on each keystroke (debounced). Each result card shows lowest price, pharmacy count. | `templates/customer/search.html`, `templates/partials/_search_results.html` | FR-20, FR-21, FR-22 |
 | F3-10 | **Web (Django+htmx):** Medicine detail page — comparison table with pharmacy rows, "View Pharmacy" links, "Notify me" form (POST to notify endpoint via htmx, replace form with success message). | `templates/customer/medicine_detail.html`, `templates/partials/_comparison_table.html`, `templates/partials/_notify_form.html` | FR-23, FR-24, FR-27 |
 | F3-11 | **Web (Django+htmx):** Pharmacy storefront page — same layout as Flutter, server-rendered with htmx sorting/searching within the storefront's medicine list. | `templates/customer/pharmacy_storefront.html` | FR-31, FR-32, FR-33 |
 | F3-12 | **Web (Django+htmx):** Pharmacy search page — search input + results with distance and open_now filter. | `templates/customer/pharmacy_search.html` | FR-28, FR-29, FR-30 |
 | F3-13 | **Web (Django+htmx):** Admin dashboard — basic stats page at `/admin/dashboard/` with total pharmacies, total listings, total customers, pending unmatched entries (data from B3-12). Auto-refresh via htmx polling (every 60 seconds). | `templates/admin/dashboard.html` | FR-34 |
-| F3-14 | **Flutter + Web:** Write end-to-end integration tests: customer opens app → sees nearby pharmacies → searches medicine → views comparison → subscribes for notification. | Test files | |
+| F3-14 | **Web:** Write end-to-end integration tests for the complete customer flow: visits website → sees nearby pharmacies → searches medicine → views comparison → subscribes for notification. (Flutter equivalent deferred to Android cycle.) | Test files | |
 
 ### Review & Fix Sub-section (Tech Lead)
 
 | Task | Details |
 |---|---|
 | R3-01 | Review Backend branch: verify PostGIS queries are correct (`ST_DWithin` with `GEOGRAPHY`, not `GEOMETRY`), medicine search results match the required API shape from architect.md Section 5.4 exactly, pagination is cursor-based on all list endpoints, open_now filter logic handles timezone correctly (BDT — Asia/Dhaka). Verify `notifications` app is minimal and has no business logic beyond storing the subscription. |
-| R3-02 | Review Frontend branch (Flutter): verify location permission handling works (granted + denied paths), map view renders pharmacy pins correctly, comparison table is sorted by price, radius filter changes trigger a new API call, "notify me" flow works for both authenticated and unauthenticated users. |
-| R3-03 | Review Frontend branch (Web): verify htmx-powered search is debounced and doesn't fire on every keystroke, partial updates replace the correct DOM elements, open_now filter works, the admin dashboard stats load correctly. Verify no hardcoded strings anywhere — all text goes through `{% trans %}` or the Flutter ARB files. |
+| R3-02 | **[Deferred — Android Cycle (Future)]** Review Frontend branch (Flutter). |
+| R3-03 | Review Frontend branch (Web): verify htmx-powered search is debounced and doesn't fire on every keystroke, partial updates replace the correct DOM elements, open_now filter works, the admin dashboard stats load correctly. Verify no hardcoded strings anywhere — all text goes through `{% trans %}` or the ARB files (when Android cycle begins). |
 | R3-04 | Fix issues found. Merge to `main`. Verify the complete Module 1 end-to-end flow: pharmacy registers → adds medicines → customer opens app → sees pharmacy in radius → searches medicine → compares prices → subscribes for notification. |
 
 ---
@@ -263,9 +271,10 @@ After all three phases are merged to `main`:
 
 | Task | Owner | Details |
 |---|---|---|
-| PT-01 | Tech Lead | Run full test suite: `pytest` for backend, `flutter test` for Android app, manual walkthrough of the web surfaces. Verify no regressions. |
+| PT-01 | Tech Lead | Run full test suite: `pytest` for backend, manual walkthrough of the web surfaces. Verify no regressions. |
 | PT-02 | Tech Lead | Update `development_progress.md` with the final state of all three phases, consolidating from `backend_progress.md` and `frontend_progress.md`. |
 | PT-03 | Tech Lead | Produce `progress-report.md` for the full Module 1 cycle (per the Senior Software Engineer — Team Lead's role definition): phase status, review cycle counts per phase, any unresolved issues, and a factual summary for PM go/no-go decision. |
+| PT-04 | Tech Lead | **Android Cycle kickoff:** After client signs off on web Module 1, brief the Frontend Specialist on all deferred Flutter tasks (F1-01 through F1-03, F2-06, F3-01 through F3-07). Backend is unchanged — same REST API already built and tested. |
 
 ---
 

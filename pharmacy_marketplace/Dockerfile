@@ -5,10 +5,12 @@ FROM python:3.12-slim
 
 # ── System dependencies ──────────────────────────────────────────────────
 # GDAL is required by GeoDjango for PostGIS support.
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# libgdal-dev provides the unversioned .so symlink that ctypes.CDLL() needs.
+RUN apt-get update && apt-get install -y \
     binutils \
     libproj-dev \
     gdal-bin \
+    libgdal-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Python environment ───────────────────────────────────────────────────

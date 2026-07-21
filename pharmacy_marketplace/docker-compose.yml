@@ -60,6 +60,7 @@ services:
     env_file:
       - .env
     environment:
+      DJANGO_SETTINGS_MODULE: pharmacy_marketplace.settings.dev
       DB_HOST: db
       REDIS_URL: redis://redis:6379/0
     ports:
