@@ -19,11 +19,14 @@ DATABASES = {
     }
 }
 
-# Remove django.contrib.gis to avoid GDAL dependency
+# Remove GIS-dependent and transitively-dependent apps to avoid GDAL requirement
+# Chain: pharmacles → catalog (FK) → notifications (FK)
 INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in (  # noqa: F405
     "django.contrib.gis",
-    "pharmacies",      # uses gis_models.PointField — needs GDAL
-    "debug_toolbar",   # may not be installed
+    "pharmacies",          # uses gis_models.PointField — needs GDAL
+    "catalog",             # FK to pharmacies.Pharmacy
+    "notifications",       # FK to catalog.MasterMedicine
+    "debug_toolbar",       # may not be installed
     "django_extensions",
 )]
 

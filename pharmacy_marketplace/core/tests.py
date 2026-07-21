@@ -1,5 +1,7 @@
 """Tests for the core app — pagination, exception handler, health check."""
 
+import json
+
 from django.http import JsonResponse
 from django.test import RequestFactory, TestCase
 
@@ -16,6 +18,6 @@ class HealthCheckTest(TestCase):
         response = health_check(request)
         self.assertIsInstance(response, JsonResponse)
         self.assertIn(response.status_code, [200, 503])
-        data = response.json()
+        data = json.loads(response.content)
         self.assertIn("status", data)
         self.assertIn("database", data)

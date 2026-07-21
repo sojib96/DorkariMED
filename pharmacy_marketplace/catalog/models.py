@@ -127,7 +127,7 @@ class PharmacyMedicineListing(BaseModel):
             models.Index(
                 fields=["pharmacy"],
                 condition=models.Q(master_medicine__isnull=True),
-                name="idx_listings_needing_normalization",
+                name="idx_unlisted_listings",
             ),
         ]
 
