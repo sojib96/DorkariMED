@@ -10,6 +10,7 @@ from datetime import timedelta
 from django.contrib.auth.hashers import check_password, make_password
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.utils.translation import gettext_lazy as _
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -70,7 +71,7 @@ class CustomerRegistrationView(generics.CreateAPIView):
                 "full_name": user.full_name,
                 "role": user.role,
                 "is_phone_verified": user.is_phone_verified,
-                "message": "Account created. Please verify your phone via OTP.",
+                "message": _("Account created. Please verify your phone via OTP."),
             },
             status=status.HTTP_201_CREATED,
         )
@@ -114,7 +115,7 @@ class PharmacyOwnerRegistrationView(generics.CreateAPIView):
                 "full_name": user.full_name,
                 "role": user.role,
                 "is_phone_verified": user.is_phone_verified,
-                "message": "Account created. Please verify your phone via OTP.",
+                "message": _("Account created. Please verify your phone via OTP."),
             },
             status=status.HTTP_201_CREATED,
         )
@@ -199,7 +200,7 @@ class SendOtpView(APIView):
         if phone_attempts >= 5:
             return Response(
                 {"error": {"code": "rate_limited",
-                           "message": "Too many OTP requests for this phone. Try again later.",
+                           "message": _("Too many OTP requests for this phone. Try again later."),
                            "details": None}},
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
@@ -228,7 +229,7 @@ class SendOtpView(APIView):
 
         return Response(
             {
-                "message": "Verification code sent.",
+                "message": _("Verification code sent."),
                 "phone": phone,
                 "expires_in_minutes": 10,
             },
@@ -272,7 +273,7 @@ class VerifyOtpView(APIView):
             # No valid OTP code found — might be expired or already used
             return Response(
                 {"error": {"code": "otp_not_found",
-                           "message": "No valid verification code found. Request a new one.",
+                           "message": _("No valid verification code found. Request a new one."),
                            "details": None}},
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -281,7 +282,7 @@ class VerifyOtpView(APIView):
         if otp_code.attempts >= 5:
             return Response(
                 {"error": {"code": "otp_locked",
-                           "message": "Too many incorrect attempts. Request a new code.",
+                           "message": _("Too many incorrect attempts. Request a new code."),
                            "details": None}},
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -293,7 +294,8 @@ class VerifyOtpView(APIView):
             remaining = 5 - otp_code.attempts
             return Response(
                 {"error": {"code": "invalid_otp",
-                           "message": f"Invalid code. {remaining} attempt(s) remaining.",
+                           "message": _("Invalid code. %(remaining)d attempt(s) remaining.")
+                                       % {"remaining": remaining},
                            "details": None}},
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -307,7 +309,7 @@ class VerifyOtpView(APIView):
 
         return Response(
             {
-                "message": "Phone verified successfully.",
+                "message": _("Phone verified successfully."),
                 "phone": phone,
                 "is_phone_verified": True,
             },

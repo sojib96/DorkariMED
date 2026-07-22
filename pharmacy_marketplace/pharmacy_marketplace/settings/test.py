@@ -39,6 +39,14 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["login"] = "100/min"  # noqa: F405
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["registration"] = "100/min"  # noqa: F405
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["otp"] = "100/min"  # noqa: F405
 
+# Use LocMemCache for test isolation (no Redis dependency)
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "dorkarimed-test",
+    }
+}
+
 DEBUG = True
 
 SECRET_KEY = "test-key-not-for-production"
