@@ -164,3 +164,93 @@ Remote:   none configured (no `git remote` set)
               - phase-1-frontend-auth
 5. [THEN]     Phase 1 work begins
 ```
+
+---
+
+## 10. Phase 1 Frontend Web Auth — Complete & Merged (22 Jul 2026)
+
+**Branch:** `phase-1-frontend-web-auth` → merged to `main`  
+**Review cycles:** 1 (no rejections — issues fixed inline during review)  
+**Scope:** Tech_lead_plan.md F1-04 through F1-08 (web only; Flutter deferred)
+
+### Delivered Features
+
+| Feature | Status | Notes |
+|---|---|---|
+| Owner 4-step registration (Account → Pharmacy → Location → Review) | ✅ Merged | Session-backed wizard; Leaflet.js map picker; hours builder; step indicator |
+| Owner login with role check | ✅ Merged | Validates `role=pharmacy_owner`, rejects customer accounts |
+| Owner dashboard shell | ✅ Merged | Sidebar/bottom nav; welcome card; summary grid; quick actions; activity placeholder |
+| Customer registration | ✅ Merged | Single-step form; OTP verification on success |
+| Customer login | ✅ Merged | Standard session auth with htmx header swap |
+| Shared partials | ✅ Merged | `_alert.html`, `_otp_verify.html`, `_hours_builder.html`, `_map_picker.html`, `_step_indicator.html`, `_skeleton_card.html`, `owner_nav.html` |
+| CSS design system | ✅ Merged | `base.css` (tokens, components, responsive, 1060 lines); `owner.css` (surface-specific overrides) |
+| JS interactions | ✅ Merged | OTP digit auto-advance; password toggle; alert auto-dismiss; htmx loading states; CSRF header config |
+| `accounts/views.py` → `api_views.py` rename | ✅ Verified | All Python imports consistent; `accounts/views/__init__.py` created as package marker |
+
+### Tech Lead Review Findings
+
+**Standard checklist (R1-01):**
+- ✅ No Flutter/Dart files created in this branch
+- ✅ Session-based auth on all web views (not JWT)
+- ✅ i18n: `{% trans %}` used throughout templates (4 hardcoded strings found and fixed during review)
+- ✅ Design tokens in `base.css` extended, not replaced
+- ✅ Design conformance to `design.md` sections 4.1, 4.3, 4.4, 4.7, 5.2, 5.3, 5.4, 5.6, 5.7, 6.13 (minor deviations documented below)
+- ✅ Security headers: X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Content-Language: en
+
+**Client-flagged item resolution:**
+
+| Item | Finding | Verdict |
+|---|---|---|
+| Profile edit scope | Not in tech_lead_plan.md Phase 1 tasks F1-04–F1-08 | ✅ **Confirmed: Phase 2 scope.** Placeholder at `/owner/profile/` says "Profile editing will be available in Phase 2." |
+| `accounts/views.py` rename consistency | `accounts/api_views.py` exists and is imported by `accounts/urls/api.py`; `accounts/views/web.py` holds web views; `pharmacies/urls/owner.py` and `accounts/urls/auth.py` import correctly from `accounts.views.web`; `views/__init__.py` exists | ✅ **Consistent. No code references to old `accounts.views` remain.** |
+| Real OTP end-to-end test | Registered user 01712345678 → OTP sent (code found in logs: 436129) → verified successfully (is_phone_verified=true) → wrong code rejected (400: "No valid verification code found") | ✅ **OTP flow fully functional against live backend.** |
+| Design conformance | Implementation matches `design.md` with minor deviations: review step lacks "Edit" per-section links (Back buttons serve equivalent function); map picker lacks Nominatim address search (optional Phase 1 feature); step counts show "4 steps" consistently (design had inconsistent "of 3" vs 4) | ✅ **Conformant. Minor deviations noted for Phase 2 refinement.** |
+
+**Design conformance detail (deviations from `design.md`):**
+| Design Spec | Implementation | Status |
+|---|---|---|
+| Registration step subtitle "Step 1 of 3" (design §5.6) | "Step 1 of 4" (consistent 4-step count) | Minor — 4-step is correct per §4.1 flow diagram |
+| Review step "Edit" links per section (§5.6) | Back buttons on each step serve equivalent purpose | Acceptable — Back functionally identical |
+| Map Nominatim address search (§4.1) | Not implemented (manual coordinate entry fallback only) | Minor — Phase 1 scope, can add in Phase 2 |
+| Quick action label "Edit Pharmacy Profile" (§5.7) | "Edit Profile" in dashboard | Minor wording difference |
+| Storefront link in sidebar (§5.7) | Present with external link icon | ✅ Conformant |
+
+### Test Results
+
+```
+Ran 75 tests in 13.113s
+  72 pass (29 web auth + 41 API + 2 core)
+   1 error — pharmacies.tests: pre-existing ImportError (needs PostGIS in test settings)
+   2 skipped — catalog + notifications (excluded from test settings, pre-existing)
+```
+
+All 29 web auth integration tests pass. The 1 error is a pre-existing issue in `pharmacies.tests` that requires PostGIS support in the test database — it is not caused by this branch.
+
+### OTP End-to-End Verification
+
+| Step | API Call | Response |
+|---|---|---|
+| Register customer | `POST /api/v1/auth/register/customer/` | `201: id=2, phone=01712345678, is_phone_verified=false` |
+| Send OTP | `POST /api/v1/auth/otp/send/` | `200: "Verification code sent.", expires_in_minutes=10` |
+| Verify OTP | `POST /api/v1/auth/otp/verify/` with code `436129` | `200: is_phone_verified=true` |
+| Wrong code | `POST /api/v1/auth/otp/verify/` with code `000000` | `400: "No valid verification code found. Request a new one."` |
+
+### Fixes Applied During Review
+
+| File | Issue | Fix |
+|---|---|---|
+| `templates/customer/login.html:13` | Hardcoded `"You're already signed in."` | Wrapped in `{% trans %}` |
+| `templates/customer/register.html:13` | Hardcoded `"You're already signed in."` | Wrapped in `{% trans %}` |
+| `templates/partials/_otp_verify.html:25` | Hardcoded OTP failure message | Wrapped in `{% trans %}` |
+| `templates/base.html` | JS fallback strings not translatable | Added `data-loading-text` and `data-network-error` attributes |
+| `static/js/base.js` | `'Processing...'` / `'Connection lost...'` fallbacks | Read from DOM data attributes instead |
+
+### Branch State (After Merge)
+
+```
+main  →  3+ commits:
+          9683ff8 — Setup Phase scaffold
+          61c2f0d — development_progress.md (initial)
+          [multiple] — Phase 1 backend + fixes
+          [now]      — Phase 1 frontend web auth with i18n fixes
+```
