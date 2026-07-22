@@ -558,7 +558,10 @@ class WebCustomerRegistrationTests(TestCase):
         # User created
         self.assertTrue(User.objects.filter(phone="01712345678").exists())
         # User is logged in (session has user)
-        self.assertEqual(self.client.session["_auth_user_id"], str(User.objects.get(phone="01712345678").pk))
+        self.assertEqual(
+            self.client.session["_auth_user_id"],
+            str(User.objects.get(phone="01712345678").pk),
+        )
 
     def test_post_duplicate_phone(self):
         """POST with existing phone re-renders form with error."""
@@ -835,7 +838,7 @@ class WebOwnerDashboardTests(TestCase):
 
     def test_authenticated_renders_template(self):
         """Authenticated owner sees the dashboard template."""
-        user = User.objects.create_user(
+        _ = User.objects.create_user(
             phone="01798765432", password="pass123",
             full_name="Dashboard Owner", role=User.Role.PHARMACY_OWNER,
         )
@@ -846,7 +849,7 @@ class WebOwnerDashboardTests(TestCase):
 
     def test_dashboard_shows_welcome(self):
         """Dashboard displays the welcome card."""
-        user = User.objects.create_user(
+        _ = User.objects.create_user(
             phone="01798765432", password="pass123",
             full_name="Welcome User", role=User.Role.PHARMACY_OWNER,
         )

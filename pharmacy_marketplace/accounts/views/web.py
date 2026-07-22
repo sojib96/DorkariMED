@@ -9,16 +9,17 @@ which is reserved for the API consumed by non-session clients (Flutter).
 import json
 import logging
 
-from django.conf import settings
 from django.contrib import messages as django_messages
-from django.contrib.auth import authenticate, login as django_login, logout as django_logout
+from django.contrib.auth import authenticate
+from django.contrib.auth import login as django_login
+from django.contrib.auth import logout as django_logout
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
-from django.views.generic import TemplateView, View
+from django.views.generic import TemplateView
 
 from accounts.models import User
 
@@ -57,7 +58,9 @@ class CustomerRegistrationView(TemplateView):
         if not phone:
             errors["phone"] = _("Please enter your phone number.")
         elif not phone.startswith("01") or len(phone) != 11 or not phone.isdigit():
-            errors["phone"] = _("Please enter a valid Bangladeshi phone number (e.g., 01XXXXXXXXX).")
+            errors["phone"] = _(
+                "Please enter a valid Bangladeshi phone number (e.g., 01XXXXXXXXX)."
+            )
         elif User.objects.filter(phone=phone).exists():
             errors["phone"] = _("This phone number is already registered. Sign in instead.")
 
@@ -189,7 +192,9 @@ class OwnerRegistrationView(TemplateView):
             if not phone:
                 errors["phone"] = _("Please enter your phone number.")
             elif not phone.startswith("01") or len(phone) != 11 or not phone.isdigit():
-                errors["phone"] = _("Please enter a valid Bangladeshi phone number (e.g., 01XXXXXXXXX).")
+                errors["phone"] = _(
+                    "Please enter a valid Bangladeshi phone number (e.g., 01XXXXXXXXX)."
+                )
             elif User.objects.filter(phone=phone).exists():
                 errors["phone"] = _("This phone number is already registered.")
             if not password:
@@ -283,7 +288,9 @@ class OwnerRegistrationView(TemplateView):
 
             errors = {}
             if not lat or not lng:
-                errors["location"] = _("Please place a pin on the map to set your pharmacy location.")
+                errors["location"] = _(
+                    "Please place a pin on the map to set your pharmacy location."
+                )
 
             if errors:
                 return render(request, self.template_name, {
@@ -327,7 +334,7 @@ class OwnerRegistrationView(TemplateView):
             try:
                 from pharmacies.models import Pharmacy
             except Exception:
-                Pharmacy = None
+                Pharmacy = None  # noqa: N806 — intentional fallback for optional import
 
             # Create user
             user = User.objects.create_user(
@@ -387,7 +394,7 @@ class OwnerRegistrationView(TemplateView):
                 "error_url": reverse("auth:owner-register"),
             })
 
-        except Exception as e:
+        except Exception:
             logger.exception("Owner registration failed")
             return render(request, self.template_name, {
                 "step": 3,
@@ -436,8 +443,9 @@ class OwnerLoginView(TemplateView):
                 try:
                     from pharmacies.models import Pharmacy
                 except Exception:
-                    Pharmacy = None
-                pharmacy = Pharmacy.objects.filter(owner=user, status="active").first() if Pharmacy else None
+                    Pharmacy = None  # noqa: N806 — intentional fallback for optional import
+                if Pharmacy and not Pharmacy.objects.filter(owner=user, status="active").exists():
+                    pass  # active pharmacy check (available for future use)
                 if request.htmx:
                     response = HttpResponse()
                     response["HX-Redirect"] = reverse("owner:dashboard")
@@ -465,7 +473,7 @@ class OwnerDashboardView(LoginRequiredMixin, TemplateView):
         try:
             from pharmacies.models import Pharmacy
         except Exception:
-            Pharmacy = None
+            Pharmacy = None  # noqa: N806 — intentional fallback for optional import
         pharmacy = Pharmacy.objects.filter(owner=user).first() if Pharmacy else None
 
         context["user"] = user
