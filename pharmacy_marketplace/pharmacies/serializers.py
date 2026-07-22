@@ -5,11 +5,31 @@ Includes operating_hours JSON validation using the custom validator
 from ``pharmacies.validators``.
 """
 
+from django.contrib.gis.geos import Point
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from pharmacies.models import Pharmacy
 from pharmacies.validators import validate_operating_hours
+
+
+def _coerce_location(value):
+    """Convert a GeoJSON dict to a GEOS Point if needed.
+
+    DRF passes the location value as a Python dict parsed from JSON
+    (e.g. ``{"type": "Point", "coordinates": [90.4, 23.8]}``). GeoDjango's
+    SpatialProxy rejects raw dicts, so we convert to a ``Point`` object
+    before passing to ``create()`` / ``update()``.
+    """
+    if value is not None and isinstance(value, dict):
+        try:
+            return Point(value["coordinates"][0], value["coordinates"][1], srid=4326)
+        except (KeyError, TypeError, IndexError):
+            raise serializers.ValidationError(
+                _("Location must be a GeoJSON Point: "
+                  "{\"type\": \"Point\", \"coordinates\": [lng, lat]}.")
+            )
+    return value
 
 
 class PharmacyRegistrationSerializer(serializers.ModelSerializer):
@@ -40,10 +60,10 @@ class PharmacyRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def validate_location(self, value):
-        """Ensure location has valid coordinates."""
+        """Ensure location is valid and convert GeoJSON dict to a Point object."""
         if value is None:
             raise serializers.ValidationError(_("Location is required."))
-        return value
+        return _coerce_location(value)
 
 
 class PharmacyDetailSerializer(serializers.ModelSerializer):
@@ -114,6 +134,7 @@ class PharmacyLocationSerializer(serializers.ModelSerializer):
         fields = ["location"]
 
     def validate_location(self, value):
+        """Ensure location is valid and convert GeoJSON dict to a Point object."""
         if value is None:
             raise serializers.ValidationError(_("Location is required."))
-        return value
+        return _coerce_location(value)

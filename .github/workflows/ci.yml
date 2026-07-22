@@ -57,7 +57,7 @@ jobs:
       - name: Run tests with coverage
         run: pytest --cov --cov-report=term-missing --cov-fail-under=80
         env:
-          DJANGO_SETTINGS_MODULE: pharmacy_marketplace.settings.dev
+          DJANGO_SETTINGS_MODULE: pharmacy_marketplace.settings.ci
           DB_HOST: localhost
           DB_NAME: pharmacy_marketplace
           DB_USER: pharmacy_user
