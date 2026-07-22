@@ -118,7 +118,8 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.disabled = true;
         const originalText = btn.innerHTML;
         btn.dataset.originalText = originalText;
-        btn.innerHTML = '<span class="spinner"></span> ' + (btn.dataset.loadingText || 'Processing...');
+        var fallbackText = document.body?.dataset?.loadingText || 'Processing...';
+        btn.innerHTML = '<span class="spinner"></span> ' + (btn.dataset.loadingText || fallbackText);
       }
     }
   });
@@ -142,7 +143,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const errorDiv = document.createElement('div');
       errorDiv.className = 'alert alert-error';
       errorDiv.setAttribute('role', 'alert');
-      errorDiv.innerHTML = '<span class="alert-icon">⚠</span><span class="alert-body">Connection lost. Please check your internet and try again.</span>';
+      var netError = document.body?.dataset?.networkError || 'Connection lost. Please check your internet and try again.';
+      errorDiv.innerHTML = '<span class="alert-icon">⚠</span><span class="alert-body">' + netError + '</span>';
       target.prepend(errorDiv);
     }
   });

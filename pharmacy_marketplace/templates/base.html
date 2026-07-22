@@ -9,7 +9,9 @@
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% block body_class %}{% endblock %}"
+      data-loading-text="{% trans 'Processing…' %}"
+      data-network-error="{% trans 'Connection lost. Please check your internet and try again.' %}">
   <a href="#main-content" class="skip-to-content">{% trans "Skip to content" %}</a>
 
   {% block header %}

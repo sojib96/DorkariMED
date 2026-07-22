@@ -22,7 +22,8 @@
     {% endblocktrans %}
   </p>
 
-  {% include "partials/_alert.html" with type="error" message="Could not send verification code. Please try again." dismissible=True %}
+  {% trans "Could not send verification code. Please try again." as otp_fail_msg %}
+  {% include "partials/_alert.html" with type="error" message=otp_fail_msg dismissible=True %}
 
   <form id="otp-form"
         hx-post="/api/v1/auth/otp/verify/"

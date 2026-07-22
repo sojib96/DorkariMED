@@ -8,9 +8,10 @@
   <h1>{% trans "Sign In" %}</h1>
   <p class="subtitle">{% trans "Welcome back" %}</p>
 
-  {% if already_logged_in %}
+    {% if already_logged_in %}
     <div class="mb-4">
-      {% include "partials/_alert.html" with type="info" message="You're already signed in." dismissible=True %}
+      {% trans "You're already signed in." as already_signed_in_msg %}
+      {% include "partials/_alert.html" with type="info" message=already_signed_in_msg dismissible=True %}
       <a href="/" class="btn btn-primary btn-full mt-4">{% trans "Go to Homepage" %}</a>
       <a href="{% url 'auth:logout' %}" class="btn btn-ghost btn-full mt-4">{% trans "Sign out" %}</a>
     </div>
