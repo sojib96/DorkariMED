@@ -4,6 +4,10 @@ Root URL configuration for pharmacy_marketplace.
 Top-level URL dispatch for both API (versioned) and web (template-based) traffic.
 Each app contributes its own URL patterns via its urlpatterns module, and
 the web interface is organized into three tenant surfaces (customer, owner, admin).
+
+GIS-dependent apps (pharmacies, catalog, search, notifications) are conditionally
+included so that the project can run without GDAL for local testing. The CI
+pipeline runs against a full PostGIS stack and includes all apps.
 """
 
 from django.conf import settings
@@ -15,28 +19,41 @@ from core.health import health_check
 
 # ── API v1 ──────────────────────────────────────────────────────────────────
 api_v1_patterns = [
-    path("accounts/", include("accounts.urls.api", namespace="api-accounts")),
-    path("pharmacies/", include("pharmacies.urls.api", namespace="api-pharmacies")),
-    path("catalog/", include("catalog.urls.api", namespace="api-catalog")),
-    path("search/", include("search.urls.api", namespace="api-search")),
-    path("notifications/", include("notifications.urls.api", namespace="api-notifications")),
+    path("auth/", include("accounts.urls.api", namespace="api-accounts")),
 ]
+
+# Conditionally include GIS-dependent API routes
+gps_api = [
+    ("pharmacies", "pharmacies.urls.api", "api-pharmacies"),
+    ("catalog", "catalog.urls.api", "api-catalog"),
+    ("search", "search.urls.api", "api-search"),
+    ("notifications", "notifications.urls.api", "api-notifications"),
+]
+for app_name, url_module, namespace in gps_api:
+    if app_name in settings.INSTALLED_APPS:
+        api_v1_patterns.append(path(f"{app_name}/", include(url_module, namespace=namespace)))
 
 # ── Web surfaces ────────────────────────────────────────────────────────────
 web_patterns = [
-    # Customer-facing site
-    path("", include("pharmacies.urls.webstore", namespace="store")),
-    path("search/", include("search.urls.webstore", namespace="web-search")),
-    # Pharmacy owner dashboard
-    path("owner/", include("pharmacies.urls.owner", namespace="owner")),
-    path("owner/catalog/", include("catalog.urls.owner", namespace="owner-catalog")),
-    # Admin dashboard (Django admin + custom admin views)
-    path("admin/", admin.site.urls),
-    path("admin/", include("catalog.urls.admin", namespace="admin-catalog")),
-    path("admin/", include("notifications.urls.admin", namespace="admin-notifications")),
     # Authentication (web session-based)
     path("auth/", include("accounts.urls.auth", namespace="auth")),
 ]
+
+# Conditionally include GIS-dependent web routes
+gps_web = [
+    ("pharmacies", "pharmacies.urls.webstore", "store"),
+    ("pharmacies", "pharmacies.urls.owner", "owner"),
+    ("catalog", "catalog.urls.owner", "owner-catalog"),
+    ("search", "search.urls.webstore", "web-search"),
+    ("catalog", "catalog.urls.admin", "admin-catalog"),
+    ("notifications", "notifications.urls.admin", "admin-notifications"),
+]
+for app_name, url_module, namespace in gps_web:
+    if app_name in settings.INSTALLED_APPS:
+        web_patterns.append(path(f"{app_name}/", include(url_module, namespace=namespace)))
+
+# Django admin — always included
+web_patterns.insert(0, path("admin/", admin.site.urls))
 
 # ── i18n ────────────────────────────────────────────────────────────────────
 i18n_patterns = [

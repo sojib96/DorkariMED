@@ -20,7 +20,7 @@ DATABASES = {
 }
 
 # Remove GIS-dependent and transitively-dependent apps to avoid GDAL requirement
-# Chain: pharmacles → catalog (FK) → notifications (FK)
+# Chain: pharmacies → catalog (FK) → notifications (FK)
 INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in (  # noqa: F405
     "django.contrib.gis",
     "pharmacies",          # uses gis_models.PointField — needs GDAL
@@ -32,6 +32,12 @@ INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in (  # noqa: F405
 
 # Remove MIDDLEWARE that depends on gis or debug_toolbar
 MIDDLEWARE = [m for m in MIDDLEWARE if "debug_toolbar" not in m]  # noqa: F405
+
+# Bump throttle rates so tests don't hit rate limits during rapid-fire execution.
+# Tests that specifically test throttle behaviour use their own overrides.
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["login"] = "100/min"  # noqa: F405
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["registration"] = "100/min"  # noqa: F405
+REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["otp"] = "100/min"  # noqa: F405
 
 DEBUG = True
 

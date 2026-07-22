@@ -1,35 +1,46 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.utils.translation import gettext_lazy as _
 
-from .models import User
+from accounts.models import OTPCode, User
 
 
 @admin.register(User)
-class CustomUserAdmin(UserAdmin):
-    """Admin config for the custom User model."""
+class UserAdmin(BaseUserAdmin):
+    """Admin config for the custom User model with role-based access."""
 
-    list_display = ("phone", "email", "is_pharmacy_owner", "is_phone_verified", "date_joined")
-    search_fields = ("phone", "email")
-    ordering = ("-date_joined",)
+    list_display = (
+        "phone", "full_name", "role", "is_phone_verified",
+        "is_active", "is_staff", "created_at",
+    )
+    list_filter = ("role", "is_active", "is_phone_verified", "is_staff")
+    search_fields = ("phone", "full_name", "email")
+    ordering = ("-created_at",)
 
     fieldsets = (
         (None, {"fields": ("phone", "password")}),
-        ("Personal info", {"fields": ("email", "first_name", "last_name")}),
+        (_("Personal info"), {"fields": ("full_name", "email", "role")}),
         (
-            "Permissions",
+            _("Location"),
+            {
+                "fields": ("default_latitude", "default_longitude"),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            _("Permissions"),
             {
                 "fields": (
                     "is_active",
                     "is_staff",
                     "is_superuser",
-                    "is_pharmacy_owner",
                     "is_phone_verified",
                     "groups",
                     "user_permissions",
-                )
+                ),
             },
         ),
-        ("Important dates", {"fields": ("last_login", "date_joined")}),
+        (_("Important dates"), {"fields": ("last_login", "created_at", "updated_at")}),
     )
 
     add_fieldsets = (
@@ -37,7 +48,18 @@ class CustomUserAdmin(UserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("phone", "email", "password1", "password2"),
+                "fields": ("phone", "full_name", "email", "role", "password1", "password2"),
             },
         ),
     )
+
+
+@admin.register(OTPCode)
+class OTPCodeAdmin(admin.ModelAdmin):
+    """Admin view for OTP codes (read-only, for debugging)."""
+
+    list_display = ("phone", "is_verified", "attempts", "created_at", "expires_at")
+    list_filter = ("is_verified",)
+    search_fields = ("phone",)
+    ordering = ("-created_at",)
+    readonly_fields = ("phone", "code", "attempts", "is_verified", "created_at", "expires_at")
