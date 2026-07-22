@@ -1,0 +1,126 @@
+{% load static i18n %}
+{% comment %}
+  Leaflet.js location picker partial.
+  Usage: {% include "partials/_map_picker.html" with lat=23.8103 lng=90.4125 input_prefix="pharmacy" %}
+  lat/lng: initial coordinates (defaults to Dhaka)
+  input_prefix: prefix for lat/lng hidden input names (e.g., "pharmacy" → pharmacy_lat, pharmacy_lng)
+{% endcomment %}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+      onerror="this.parentElement.querySelector('.map-fallback')?.classList.remove('visually-hidden')">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        crossorigin=""
+        onerror="document.getElementById('map-fallback-{{ input_prefix|default:'loc' }}')?.classList.remove('visually-hidden')"
+        defer></script>
+
+{% with prefix=input_prefix|default:"loc" %}
+<div class="map-picker" id="map-picker-{{ prefix }}">
+  <div class="map-container" id="map-{{ prefix }}">
+    <div class="map-placeholder">
+      <span>{% trans "Loading map…" %}</span>
+    </div>
+  </div>
+
+  <div class="map-coords" id="coords-{{ prefix }}">
+    <span>{% trans "Latitude:" %} <span id="lat-display-{{ prefix }}">{{ lat|default:"23.8103" }}</span></span>
+    <span>{% trans "Longitude:" %} <span id="lng-display-{{ prefix }}">{{ lng|default:"90.4125" }}</span></span>
+  </div>
+
+  <input type="hidden" name="{{ prefix }}_latitude" id="lat-input-{{ prefix }}" value="{{ lat|default:'23.8103' }}">
+  <input type="hidden" name="{{ prefix }}_longitude" id="lng-input-{{ prefix }}" value="{{ lng|default:'90.4125' }}">
+
+  <div class="map-fallback visually-hidden" id="map-fallback-{{ prefix }}" style="padding:var(--space-4);">
+    <p class="text-sm text-muted">{% trans "Map could not be loaded. Enter coordinates manually:" %}</p>
+    <div class="grid-2 mt-4">
+      <div class="input-group">
+        <label for="lat-manual-{{ prefix }}">{% trans "Latitude" %}</label>
+        <input type="text" class="input" id="lat-manual-{{ prefix }}" name="{{ prefix }}_latitude" value="{{ lat|default:'23.8103' }}" inputmode="decimal">
+      </div>
+      <div class="input-group">
+        <label for="lng-manual-{{ prefix }}">{% trans "Longitude" %}</label>
+        <input type="text" class="input" id="lng-manual-{{ prefix }}" name="{{ prefix }}_longitude" value="{{ lng|default:'90.4125' }}" inputmode="decimal">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var prefix = '{{ prefix }}';
+  var mapContainer = document.getElementById('map-' + prefix);
+
+  function initMap() {
+    if (typeof L === 'undefined') return;
+
+    var lat = {{ lat|default:"23.8103" }};
+    var lng = {{ lng|default:"90.4125" }};
+
+    var map = L.map('map-' + prefix).setView([lat, lng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 18
+    }).addTo(map);
+
+    var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+    function updateCoords(lat, lng) {
+      document.getElementById('lat-display-' + prefix).textContent = lat.toFixed(4);
+      document.getElementById('lng-display-' + prefix).textContent = lng.toFixed(4);
+      document.getElementById('lat-input-' + prefix).value = lat.toFixed(4);
+      document.getElementById('lng-input-' + prefix).value = lng.toFixed(4);
+      if (document.getElementById('lat-manual-' + prefix)) {
+        document.getElementById('lat-manual-' + prefix).value = lat.toFixed(4);
+        document.getElementById('lng-manual-' + prefix).value = lng.toFixed(4);
+      }
+    }
+
+    marker.on('dragend', function(e) {
+      var pos = marker.getLatLng();
+      updateCoords(pos.lat, pos.lng);
+    });
+
+    map.on('click', function(e) {
+      marker.setLatLng(e.latlng);
+      updateCoords(e.latlng.lat, e.latlng.lng);
+    });
+
+    // Manual input fallback sync
+    var latInput = document.getElementById('lat-manual-' + prefix);
+    var lngInput = document.getElementById('lng-manual-' + prefix);
+    if (latInput && lngInput) {
+      latInput.addEventListener('input', function() {
+        var v = parseFloat(this.value);
+        if (!isNaN(v)) {
+          marker.setLatLng([v, marker.getLatLng().lng]);
+          updateCoords(v, marker.getLatLng().lng);
+        }
+      });
+      lngInput.addEventListener('input', function() {
+        var v = parseFloat(this.value);
+        if (!isNaN(v)) {
+          marker.setLatLng([marker.getLatLng().lat, v]);
+          updateCoords(marker.getLatLng().lat, v);
+        }
+      });
+    }
+
+    // Fix map rendering after htmx swap
+    setTimeout(function() { map.invalidateSize(); }, 100);
+  }
+
+  // Wait for Leaflet to load then init
+  if (typeof L !== 'undefined') {
+    initMap();
+  } else {
+    var checkLeaflet = setInterval(function() {
+      if (typeof L !== 'undefined') {
+        clearInterval(checkLeaflet);
+        initMap();
+      }
+    }, 200);
+    setTimeout(function() { clearInterval(checkLeaflet); }, 10000);
+  }
+});
+</script>
+{% endwith %}

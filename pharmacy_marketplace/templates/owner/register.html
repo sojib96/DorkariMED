@@ -1,0 +1,402 @@
+{% extends "owner/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Register Your Pharmacy" %} — Pharmacy Marketplace{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin="anonymous"
+        onerror="document.getElementById('map-fallback-reg')?.classList.remove('visually-hidden')">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          crossorigin="anonymous"
+          onerror="document.getElementById('map-fallback-reg')?.classList.remove('visually-hidden')"
+          defer></script>
+{% endblock %}
+
+{% block auth_content %}
+<div class="auth-card" style="max-width:640px;" id="register-container">
+  <div class="card">
+    <h1>{% trans "Create Your Owner Account" %}</h1>
+
+    {% if step is None %}
+      {% with step=0 %}{% endwith %}
+    {% endif %}
+
+    {% if step != 0 and step != 1 and step != 2 and step != 3 %}
+      {% with step=0 %}{% endwith %}
+    {% endif %}
+
+    {% if error %}
+      {% include "partials/_alert.html" with type="error" message=error dismissible=True %}
+    {% endif %}
+
+    {% if step == 3 %}
+      {# ── Step 4 (displayed as step 3): Review & Submit ── #}
+      <p class="subtitle">{% trans "Step 4 of 4 — Review Your Information" %}</p>
+
+      <!-- Step indicator -->
+      <nav class="step-indicator" role="progressbar" aria-valuenow="4" aria-valuemin="1" aria-valuemax="4">
+        <div class="step-item"><div class="step-circle completed"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div><span class="step-label">{% trans "Account" %}</span></div>
+        <div class="step-line completed"></div>
+        <div class="step-item"><div class="step-circle completed"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div><span class="step-label">{% trans "Pharmacy" %}</span></div>
+        <div class="step-line completed"></div>
+        <div class="step-item"><div class="step-circle completed"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div><span class="step-label">{% trans "Location" %}</span></div>
+        <div class="step-line"></div>
+        <div class="step-item"><div class="step-circle current">4</div><span class="step-label">{% trans "Review" %}</span></div>
+      </nav>
+
+      <div class="review-summary">
+        <div class="card mb-4">
+          <h3 style="font-size:var(--text-sm);color:var(--color-gray-400);margin-bottom:var(--space-2);">{% trans "Account Information" %}</h3>
+          <p><strong>{% trans "Name:" %}</strong> {{ values.full_name }}</p>
+          <p><strong>{% trans "Phone:" %}</strong> {{ values.phone }}</p>
+        </div>
+        <div class="card mb-4">
+          <h3 style="font-size:var(--text-sm);color:var(--color-gray-400);margin-bottom:var(--space-2);">{% trans "Pharmacy Details" %}</h3>
+          <p><strong>{% trans "Name:" %}</strong> {{ values.pharmacy_name }}</p>
+          <p><strong>{% trans "Address:" %}</strong> {{ values.address_line }}</p>
+          <p><strong>{% trans "City:" %}</strong> {{ values.city }}</p>
+          <p><strong>{% trans "Division:" %}</strong> {{ values.division }}</p>
+          <p><strong>{% trans "Phone:" %}</strong> {{ values.pharmacy_phone }}</p>
+          {% if values.dgda_license_number %}<p><strong>{% trans "DGDA License:" %}</strong> {{ values.dgda_license_number }}</p>{% endif %}
+        </div>
+        <div class="card mb-4">
+          <h3 style="font-size:var(--text-sm);color:var(--color-gray-400);margin-bottom:var(--space-2);">{% trans "Location" %}</h3>
+          <p><strong>{% trans "Latitude:" %}</strong> {{ values.latitude }}</p>
+          <p><strong>{% trans "Longitude:" %}</strong> {{ values.longitude }}</p>
+        </div>
+      </div>
+
+      <form method="post" action="{% url 'auth:owner-register' %}"
+            hx-post="{% url 'auth:owner-register' %}"
+            hx-target="#register-container"
+            hx-swap="outerHTML">
+        {% csrf_token %}
+        <input type="hidden" name="step" value="3">
+        <button type="submit" class="btn btn-primary btn-full"
+                style="background:var(--color-owner-accent);"
+                data-loading-text="{% trans 'Creating account…' %}">
+          {% trans "Create Account & Verify Phone" %}
+        </button>
+      </form>
+
+    {% elif step == 2 %}
+      {# ── Step 3: Location ── #}
+      <p class="subtitle">{% trans "Step 3 of 4 — Pin Your Pharmacy Location" %}</p>
+
+      <nav class="step-indicator" role="progressbar" aria-valuenow="3" aria-valuemin="1" aria-valuemax="4">
+        <div class="step-item"><div class="step-circle completed"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div><span class="step-label">{% trans "Account" %}</span></div>
+        <div class="step-line completed"></div>
+        <div class="step-item"><div class="step-circle completed"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div><span class="step-label">{% trans "Pharmacy" %}</span></div>
+        <div class="step-line completed"></div>
+        <div class="step-item"><div class="step-circle current">3</div><span class="step-label">{% trans "Location" %}</span></div>
+        <div class="step-line"></div>
+        <div class="step-item"><div class="step-circle upcoming">4</div><span class="step-label">{% trans "Review" %}</span></div>
+      </nav>
+
+      {% if errors.location %}
+        {% include "partials/_alert.html" with type="error" message=errors.location dismissible=True %}
+      {% endif %}
+
+      <form method="post" action="{% url 'auth:owner-register' %}"
+            hx-post="{% url 'auth:owner-register' %}"
+            hx-target="#register-container"
+            hx-swap="outerHTML">
+        {% csrf_token %}
+        <input type="hidden" name="step" value="2">
+
+        <div class="map-picker" id="map-picker-reg">
+          <div class="map-container" id="map-reg" style="height:300px;background:var(--color-gray-100);">
+            <div class="map-placeholder"><span>{% trans "Loading map…" %}</span></div>
+          </div>
+
+          <div class="map-coords" id="coords-reg">
+            <span>{% trans "Latitude:" %} <span id="lat-display-reg">23.8103</span></span>
+            <span>{% trans "Longitude:" %} <span id="lng-display-reg">90.4125</span></span>
+          </div>
+
+          <input type="hidden" name="loc_latitude" id="lat-input-reg" value="23.8103">
+          <input type="hidden" name="loc_longitude" id="lng-input-reg" value="90.4125">
+
+          <div class="map-fallback visually-hidden" id="map-fallback-reg" style="padding:var(--space-4);">
+            <p class="text-sm text-muted">{% trans "Map could not be loaded. Enter coordinates manually:" %}</p>
+            <div class="grid-2 mt-4">
+              <div class="input-group">
+                <label for="lat-manual-reg">{% trans "Latitude" %}</label>
+                <input type="text" class="input" id="lat-manual-reg" name="loc_latitude" value="23.8103">
+              </div>
+              <div class="input-group">
+                <label for="lng-manual-reg">{% trans "Longitude" %}</label>
+                <input type="text" class="input" id="lng-manual-reg" name="loc_longitude" value="90.4125">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 mt-4">
+          <button type="submit" name="step_back" value="1" class="btn btn-secondary"
+                  formnovalidate>{% trans "Back" %}</button>
+          <button type="submit" class="btn btn-primary flex-1"
+                  style="background:var(--color-owner-accent);"
+                  data-loading-text="{% trans 'Saving…' %}">
+            {% trans "Review & Register" %}
+          </button>
+        </div>
+      </form>
+
+      <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        function initMap() {
+          if (typeof L === 'undefined') { setTimeout(initMap, 500); return; }
+          var map = L.map('map-reg').setView([23.8103, 90.4125], 13);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap', maxZoom: 18
+          }).addTo(map);
+          var marker = L.marker([23.8103, 90.4125], { draggable: true }).addTo(map);
+          function updateCoords(lat, lng) {
+            document.getElementById('lat-display-reg').textContent = lat.toFixed(4);
+            document.getElementById('lng-display-reg').textContent = lng.toFixed(4);
+            document.getElementById('lat-input-reg').value = lat.toFixed(4);
+            document.getElementById('lng-input-reg').value = lng.toFixed(4);
+          }
+          marker.on('dragend', function(e) {
+            var pos = marker.getLatLng();
+            updateCoords(pos.lat, pos.lng);
+          });
+          map.on('click', function(e) {
+            marker.setLatLng(e.latlng);
+            updateCoords(e.latlng.lat, e.latlng.lng);
+          });
+          setTimeout(function() { map.invalidateSize(); }, 200);
+        }
+        if (typeof L !== 'undefined') initMap();
+        else { var ci = setInterval(function() { if (typeof L !== 'undefined') { clearInterval(ci); initMap(); } }, 300); }
+      });
+      </script>
+
+    {% elif step == 1 %}
+      {# ── Step 2: Pharmacy Details ── #}
+      <p class="subtitle">{% trans "Step 2 of 4 — Pharmacy Information" %}</p>
+
+      <nav class="step-indicator" role="progressbar" aria-valuenow="2" aria-valuemin="1" aria-valuemax="4">
+        <div class="step-item"><div class="step-circle completed"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div><span class="step-label">{% trans "Account" %}</span></div>
+        <div class="step-line completed"></div>
+        <div class="step-item"><div class="step-circle current">2</div><span class="step-label">{% trans "Pharmacy" %}</span></div>
+        <div class="step-line"></div>
+        <div class="step-item"><div class="step-circle upcoming">3</div><span class="step-label">{% trans "Location" %}</span></div>
+        <div class="step-line"></div>
+        <div class="step-item"><div class="step-circle upcoming">4</div><span class="step-label">{% trans "Review" %}</span></div>
+      </nav>
+
+      {% if errors.general %}
+        {% include "partials/_alert.html" with type="error" message=errors.general dismissible=True %}
+      {% endif %}
+
+      <form method="post" action="{% url 'auth:owner-register' %}"
+            hx-post="{% url 'auth:owner-register' %}"
+            hx-target="#register-container"
+            hx-swap="outerHTML"
+            novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="step" value="1">
+
+        <div class="input-group">
+          <label for="id_pharmacy_name">{% trans "Pharmacy Name" %} <span class="required">*</span></label>
+          <input type="text" name="pharmacy_name" id="id_pharmacy_name"
+                 class="input {% if errors.pharmacy_name %}error{% endif %}"
+                 placeholder="{% trans 'e.g., Green Pharmacy' %}"
+                 value="{{ values.pharmacy_name|default:'' }}" required>
+          {% if errors.pharmacy_name %}<span class="field-error" role="alert">{{ errors.pharmacy_name }}</span>{% endif %}
+        </div>
+
+        <div class="input-group">
+          <label for="id_address">{% trans "Address Line" %} <span class="required">*</span></label>
+          <textarea name="address_line" id="id_address" rows="2"
+                    class="input {% if errors.address_line %}error{% endif %}"
+                    placeholder="{% trans 'Full street address' %}" required>{{ values.address_line|default:'' }}</textarea>
+          {% if errors.address_line %}<span class="field-error" role="alert">{{ errors.address_line }}</span>{% endif %}
+        </div>
+
+        <div class="grid-2">
+          <div class="input-group">
+            <label for="id_city">{% trans "City" %} <span class="required">*</span></label>
+            <select name="city" id="id_city" class="input {% if errors.city %}error{% endif %}" required>
+              <option value="">{% trans "Select city" %}</option>
+              <option value="Dhaka" {% if values.city == 'Dhaka' %}selected{% endif %}>{% trans "Dhaka" %}</option>
+              <option value="Chattogram" {% if values.city == 'Chattogram' %}selected{% endif %}>{% trans "Chattogram" %}</option>
+              <option value="Khulna" {% if values.city == 'Khulna' %}selected{% endif %}>{% trans "Khulna" %}</option>
+              <option value="Rajshahi" {% if values.city == 'Rajshahi' %}selected{% endif %}>{% trans "Rajshahi" %}</option>
+              <option value="Sylhet" {% if values.city == 'Sylhet' %}selected{% endif %}>{% trans "Sylhet" %}</option>
+              <option value="Barishal" {% if values.city == 'Barishal' %}selected{% endif %}>{% trans "Barishal" %}</option>
+              <option value="Rangpur" {% if values.city == 'Rangpur' %}selected{% endif %}>{% trans "Rangpur" %}</option>
+              <option value="Mymensingh" {% if values.city == 'Mymensingh' %}selected{% endif %}>{% trans "Mymensingh" %}</option>
+            </select>
+            {% if errors.city %}<span class="field-error" role="alert">{{ errors.city }}</span>{% endif %}
+          </div>
+          <div class="input-group">
+            <label for="id_division">{% trans "Division" %} <span class="required">*</span></label>
+            <select name="division" id="id_division" class="input {% if errors.division %}error{% endif %}" required>
+              <option value="">{% trans "Select division" %}</option>
+              <option value="Dhaka" {% if values.division == 'Dhaka' %}selected{% endif %}>{% trans "Dhaka" %}</option>
+              <option value="Chattogram" {% if values.division == 'Chattogram' %}selected{% endif %}>{% trans "Chattogram" %}</option>
+              <option value="Khulna" {% if values.division == 'Khulna' %}selected{% endif %}>{% trans "Khulna" %}</option>
+              <option value="Rajshahi" {% if values.division == 'Rajshahi' %}selected{% endif %}>{% trans "Rajshahi" %}</option>
+              <option value="Sylhet" {% if values.division == 'Sylhet' %}selected{% endif %}>{% trans "Sylhet" %}</option>
+              <option value="Barishal" {% if values.division == 'Barishal' %}selected{% endif %}>{% trans "Barishal" %}</option>
+              <option value="Rangpur" {% if values.division == 'Rangpur' %}selected{% endif %}>{% trans "Rangpur" %}</option>
+              <option value="Mymensingh" {% if values.division == 'Mymensingh' %}selected{% endif %}>{% trans "Mymensingh" %}</option>
+            </select>
+            {% if errors.division %}<span class="field-error" role="alert">{{ errors.division }}</span>{% endif %}
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="id_pharmacy_phone">{% trans "Pharmacy Phone" %} <span class="required">*</span></label>
+          <div class="phone-wrapper">
+            <span class="phone-prefix">+88</span>
+            <input type="tel" name="pharmacy_phone" id="id_pharmacy_phone"
+                   class="input {% if errors.pharmacy_phone %}error{% endif %}"
+                   placeholder="{% trans '01XXXXXXXXX' %}"
+                   inputmode="numeric" pattern="01[0-9]{9}"
+                   value="{{ values.pharmacy_phone|default:'' }}" required>
+          </div>
+          {% if errors.pharmacy_phone %}<span class="field-error" role="alert">{{ errors.pharmacy_phone }}</span>{% endif %}
+        </div>
+
+        <div class="grid-2">
+          <div class="input-group">
+            <label for="id_dgda">{% trans "DGDA License Number" %}</label>
+            <input type="text" name="dgda_license_number" id="id_dgda"
+                   class="input"
+                   placeholder="{% trans 'Optional' %}"
+                   value="{{ values.dgda_license_number|default:'' }}">
+          </div>
+          <div class="input-group">
+            <label for="id_pharmacist_name">{% trans "Pharmacist Name" %}</label>
+            <input type="text" name="pharmacist_name" id="id_pharmacist_name"
+                   class="input"
+                   placeholder="{% trans 'Optional' %}"
+                   value="{{ values.pharmacist_name|default:'' }}">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="id_pharmacist_reg">{% trans "Pharmacist Registration Number" %}</label>
+          <input type="text" name="pharmacist_reg_number" id="id_pharmacist_reg"
+                 class="input"
+                 placeholder="{% trans 'Optional' %}"
+                 value="{{ values.pharmacist_reg_number|default:'' }}">
+        </div>
+
+        <div class="input-group">
+          <label>{% trans "Operating Hours" %}</label>
+          {% include "partials/_hours_builder.html" %}
+        </div>
+
+        <div class="flex gap-4 mt-4">
+          <button type="submit" name="step_back" value="0" class="btn btn-secondary"
+                  formnovalidate>{% trans "Back" %}</button>
+          <button type="submit" class="btn btn-primary flex-1"
+                  style="background:var(--color-owner-accent);"
+                  data-loading-text="{% trans 'Saving…' %}">
+            {% trans "Continue to Location" %}
+          </button>
+        </div>
+      </form>
+
+    {% else %}
+      {# ── Step 1: Account Information ── #}
+      <p class="subtitle">{% trans "Step 1 of 4 — Account Information" %}</p>
+
+      <nav class="step-indicator" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="4">
+        <div class="step-item"><div class="step-circle current">1</div><span class="step-label">{% trans "Account" %}</span></div>
+        <div class="step-line"></div>
+        <div class="step-item"><div class="step-circle upcoming">2</div><span class="step-label">{% trans "Pharmacy" %}</span></div>
+        <div class="step-line"></div>
+        <div class="step-item"><div class="step-circle upcoming">3</div><span class="step-label">{% trans "Location" %}</span></div>
+        <div class="step-line"></div>
+        <div class="step-item"><div class="step-circle upcoming">4</div><span class="step-label">{% trans "Review" %}</span></div>
+      </nav>
+
+      {% if errors.general %}
+        {% include "partials/_alert.html" with type="error" message=errors.general dismissible=True %}
+      {% endif %}
+
+      <form method="post" action="{% url 'auth:owner-register' %}"
+            hx-post="{% url 'auth:owner-register' %}"
+            hx-target="#register-container"
+            hx-swap="outerHTML"
+            novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="step" value="0">
+
+        <div class="input-group">
+          <label for="id_full_name">{% trans "Full Name" %} <span class="required">*</span></label>
+          <input type="text" name="full_name" id="id_full_name"
+                 class="input {% if errors.full_name %}error{% endif %}"
+                 placeholder="{% trans 'Your full name' %}"
+                 autocomplete="name" required
+                 value="{{ values.full_name|default:'' }}">
+          {% if errors.full_name %}<span class="field-error" role="alert">{{ errors.full_name }}</span>{% endif %}
+        </div>
+
+        <div class="input-group">
+          <label for="id_phone">{% trans "Phone Number" %} <span class="required">*</span></label>
+          <div class="phone-wrapper">
+            <span class="phone-prefix">+88</span>
+            <input type="tel" name="phone" id="id_phone"
+                   class="input {% if errors.phone %}error{% endif %}"
+                   placeholder="{% trans '01XXXXXXXXX' %}"
+                   inputmode="numeric" pattern="01[0-9]{9}"
+                   autocomplete="tel" required
+                   value="{{ values.phone|default:'' }}">
+          </div>
+          {% if errors.phone %}<span class="field-error" role="alert">{{ errors.phone }}</span>{% endif %}
+        </div>
+
+        <div class="input-group">
+          <label for="id_password">{% trans "Password" %} <span class="required">*</span></label>
+          <div class="password-wrapper">
+            <input type="password" name="password" id="id_password"
+                   class="input {% if errors.password %}error{% endif %}"
+                   placeholder="{% trans 'At least 8 characters' %}"
+                   autocomplete="new-password" required minlength="8">
+            <button type="button" class="password-toggle" aria-label="{% trans 'Show password' %}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
+          </div>
+          {% if errors.password %}<span class="field-error" role="alert">{{ errors.password }}</span>{% endif %}
+        </div>
+
+        <div class="input-group">
+          <label for="id_confirm_password">{% trans "Confirm Password" %} <span class="required">*</span></label>
+          <div class="password-wrapper">
+            <input type="password" name="confirm_password" id="id_confirm_password"
+                   class="input {% if errors.confirm_password %}error{% endif %}"
+                   placeholder="{% trans 'Re-enter your password' %}"
+                   autocomplete="new-password" required minlength="8">
+          </div>
+          {% if errors.confirm_password %}<span class="field-error" role="alert">{{ errors.confirm_password }}</span>{% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full"
+                style="background:var(--color-owner-accent);"
+                data-loading-text="{% trans 'Saving…' %}">
+          {% trans "Continue to Pharmacy Details" %}
+        </button>
+      </form>
+    {% endif %}
+
+    <div class="mt-4 text-center">
+      <p class="text-sm text-muted">
+        {% trans "Already have an account?" %}
+        <a href="{% url 'auth:owner-login' %}">{% trans "Sign In" %}</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

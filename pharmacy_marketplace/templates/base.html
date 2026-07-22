@@ -1,20 +1,28 @@
 <!DOCTYPE html>
 {% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 <html lang="{{ LANGUAGE_CODE|default:'en' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Pharmacy Marketplace{% endblock %}</title>
+  <title>{% block title %}{% trans "Pharmacy Marketplace" %}{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
-  {% include "partials/header.html" %}
+  <a href="#main-content" class="skip-to-content">{% trans "Skip to content" %}</a>
+
+  {% block header %}
+    {% include "partials/header.html" %}
+  {% endblock %}
+
   {% include "partials/messages.html" %}
 
+  {% block content_wrapper %}
   <main id="main-content" role="main">
     {% block content %}{% endblock %}
   </main>
+  {% endblock %}
 
   {% include "partials/footer.html" %}
 

@@ -1,12 +1,55 @@
 {% extends "base.html" %}
 {% load static i18n %}
 
-{% block body_class %}owner-dashboard{% endblock %}
+{% block body_class %}owner-surface{% endblock %}
 
 {% block extra_head %}
+  {{ block.super }}
   <link rel="stylesheet" href="{% static 'css/owner.css' %}">
 {% endblock %}
 
 {% block header %}
-  {% include "partials/owner_nav.html" %}
+  {# Owner header bar (violet, for desktop) #}
+  <header class="owner-header" role="banner">
+    <div class="owner-header-inner">
+      <button type="button" class="hamburger-btn" id="hamburger-btn" aria-label="{% trans 'Open navigation' %}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+        </svg>
+      </button>
+      <a href="{% url 'owner:dashboard' %}" class="owner-header-logo">{% trans "PharmacyMarket" %}</a>
+
+      <div class="owner-header-right">
+        {% if user.is_authenticated %}
+          <div class="owner-header-user">
+            <span class="owner-header-name">{{ user.full_name|default:user.phone }}</span>
+            <div class="user-avatar-sm" title="{{ user.full_name|default:user.phone }}">{{ user.full_name|first|upper }}{% if not user.full_name %}{{ user.phone|first|upper }}{% endif %}</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </header>
 {% endblock %}
+
+{% block content_wrapper %}
+  {% if user.is_authenticated %}
+  <div class="dashboard-layout">
+    {% include "partials/owner_nav.html" %}
+    <main class="dashboard-main" id="main-content" role="main">
+      {% include "partials/messages.html" %}
+      {% block dashboard_content %}{% endblock %}
+    </main>
+  </div>
+  {% else %}
+  <div class="dashboard-layout" style="justify-content:center;">
+    <main class="dashboard-main" id="main-content" role="main" style="max-width:480px;">
+      {% include "partials/messages.html" %}
+      {% block auth_content %}{% endblock %}
+    </main>
+  </div>
+  {% endif %}
+{% endblock %}
+
+{% block footer %}{# No footer on owner pages #}{% endblock %}
+
+{% block extra_scripts %}{{ block.super }}{% endblock %}

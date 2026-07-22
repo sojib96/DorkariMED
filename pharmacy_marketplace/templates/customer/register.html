@@ -1,0 +1,106 @@
+{% extends "customer/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Create an Account" %} — Pharmacy Marketplace{% endblock %}
+
+{% block content %}
+<div class="auth-card card" id="register-container">
+  <h1>{% trans "Create an Account" %}</h1>
+  <p class="subtitle">{% trans "Join to save your favorite pharmacies and get notified" %}</p>
+
+  {% if already_logged_in %}
+    <div class="mb-4">
+      {% include "partials/_alert.html" with type="info" message="You're already signed in." dismissible=True %}
+      <a href="/" class="btn btn-primary btn-full mt-4">{% trans "Go to Homepage" %}</a>
+    </div>
+  {% else %}
+    {% if errors.general %}
+      {% include "partials/_alert.html" with type="error" message=errors.general dismissible=True %}
+    {% endif %}
+
+    <form method="post" action="{% url 'auth:customer-register' %}"
+          hx-post="{% url 'auth:customer-register' %}"
+          hx-target="#register-container"
+          hx-swap="outerHTML"
+          novalidate>
+      {% csrf_token %}
+
+      <div class="input-group">
+        <label for="id_full_name">{% trans "Full Name" %} <span class="required">*</span></label>
+        <input type="text" name="full_name" id="id_full_name"
+               class="input {% if errors.full_name %}error{% endif %}"
+               placeholder="{% trans 'Your full name' %}"
+               autocomplete="name" required
+               value="{{ values.full_name|default:'' }}">
+        {% if errors.full_name %}
+          <span class="field-error" role="alert">{{ errors.full_name }}</span>
+        {% endif %}
+      </div>
+
+      <div class="input-group">
+        <label for="id_phone">{% trans "Phone Number" %} <span class="required">*</span></label>
+        <div class="phone-wrapper">
+          <span class="phone-prefix">+88</span>
+          <input type="tel" name="phone" id="id_phone"
+                 class="input {% if errors.phone %}error{% endif %}"
+                 placeholder="{% trans '01XXXXXXXXX' %}"
+                 inputmode="numeric" pattern="01[0-9]{9}"
+                 autocomplete="tel" required
+                 value="{{ values.phone|default:'' }}">
+        </div>
+        {% if errors.phone %}
+          <span class="field-error" role="alert">{{ errors.phone }}</span>
+        {% endif %}
+      </div>
+
+      <div class="input-group">
+        <label for="id_password">{% trans "Password" %} <span class="required">*</span></label>
+        <div class="password-wrapper">
+          <input type="password" name="password" id="id_password"
+                 class="input {% if errors.password %}error{% endif %}"
+                 placeholder="{% trans 'At least 8 characters' %}"
+                 autocomplete="new-password" required
+                 minlength="8">
+          <button type="button" class="password-toggle" aria-label="{% trans 'Show password' %}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </button>
+        </div>
+        {% if errors.password %}
+          <span class="field-error" role="alert">{{ errors.password }}</span>
+        {% endif %}
+        <span class="field-error password-hint" style="color:var(--color-gray-400);font-weight:normal;">
+          {% trans "At least 8 characters" %}
+        </span>
+      </div>
+
+      <div class="input-group">
+        <label for="id_confirm_password">{% trans "Confirm Password" %} <span class="required">*</span></label>
+        <div class="password-wrapper">
+          <input type="password" name="confirm_password" id="id_confirm_password"
+                 class="input {% if errors.confirm_password %}error{% endif %}"
+                 placeholder="{% trans 'Re-enter your password' %}"
+                 autocomplete="new-password" required
+                 minlength="8">
+        </div>
+        {% if errors.confirm_password %}
+          <span class="field-error" role="alert">{{ errors.confirm_password }}</span>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" data-loading-text="{% trans 'Creating account…' %}">
+        {% trans "Create Account" %}
+      </button>
+    </form>
+
+    <div class="mt-4 text-center">
+      <p class="text-sm text-muted">
+        {% trans "Already have an account?" %}
+        <a href="{% url 'auth:customer-login' %}">{% trans "Sign In" %}</a>
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

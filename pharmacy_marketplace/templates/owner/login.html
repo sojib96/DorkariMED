@@ -1,0 +1,78 @@
+{% extends "owner/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Pharmacy Owner Sign In" %} — Pharmacy Marketplace{% endblock %}
+
+{% block auth_content %}
+<div class="auth-card card">
+  <h1>{% trans "Pharmacy Owner Sign In" %}</h1>
+  <p class="subtitle">{% trans "Access your storefront dashboard" %}</p>
+
+  {% if errors.general %}
+    {% include "partials/_alert.html" with type="error" message=errors.general dismissible=True %}
+  {% endif %}
+
+  <form method="post" action="{% url 'auth:owner-login' %}"
+        hx-post="{% url 'auth:owner-login' %}"
+        hx-target="this" hx-swap="outerHTML"
+        novalidate>
+    {% csrf_token %}
+
+    <div class="input-group">
+      <label for="id_phone">{% trans "Phone Number" %} <span class="required">*</span></label>
+      <div class="phone-wrapper">
+        <span class="phone-prefix">+88</span>
+        <input type="tel" name="phone" id="id_phone"
+               class="input {% if errors.phone %}error{% endif %}"
+               placeholder="{% trans '01XXXXXXXXX' %}"
+               inputmode="numeric" pattern="01[0-9]{9}"
+               autocomplete="tel" required
+               value="{{ values.phone|default:'' }}"
+               aria-required="true"
+               autofocus>
+      </div>
+      {% if errors.phone %}
+        <span class="field-error" role="alert">{{ errors.phone }}</span>
+      {% endif %}
+    </div>
+
+    <div class="input-group">
+      <label for="id_password">{% trans "Password" %} <span class="required">*</span></label>
+      <div class="password-wrapper">
+        <input type="password" name="password" id="id_password"
+               class="input {% if errors.password %}error{% endif %}"
+               placeholder="{% trans 'Enter your password' %}"
+               autocomplete="current-password" required
+               aria-required="true">
+        <button type="button" class="password-toggle" aria-label="{% trans 'Show password' %}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+        </button>
+      </div>
+      {% if errors.password %}
+        <span class="field-error" role="alert">{{ errors.password }}</span>
+      {% endif %}
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-full"
+            style="background:var(--color-owner-accent);"
+            data-loading-text="{% trans 'Signing in…' %}">
+      {% trans "Sign In" %}
+    </button>
+  </form>
+
+  <div class="mt-6 text-center">
+    <p class="text-sm text-muted">
+      {% trans "Don't have an owner account?" %}
+      <a href="{% url 'auth:owner-register' %}">{% trans "Register your pharmacy" %}</a>
+    </p>
+    <p class="text-sm mt-2">
+      <span style="color:var(--color-gray-400);cursor:not-allowed;" title="{% trans 'Coming soon' %}">
+        {% trans "Forgot password?" %}
+      </span>
+    </p>
+  </div>
+</div>
+{% endblock %}
