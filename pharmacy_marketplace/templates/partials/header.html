@@ -1,13 +1,17 @@
+{% load i18n %}
 <header class="site-header" role="banner">
   <div class="container">
-    <a href="{% url 'store:home' %}" class="logo">PharmacyMarket</a>
-    <nav class="main-nav" aria-label="Main navigation">
-      <a href="{% url 'store:home' %}">Home</a>
+    <a href="{% url 'store:home' %}" class="logo">{% trans "PharmacyMarket" %}</a>
+    <nav class="main-nav" aria-label="{% trans 'Main navigation' %}">
+      <a href="{% url 'store:home' %}">{% trans "Home" %}</a>
       {% if user.is_authenticated %}
-        <a href="{% url 'logout' %}">Logout</a>
+        {% if user.role == 'pharmacy_owner' %}
+          <a href="{% url 'owner:dashboard' %}">{% trans "Dashboard" %}</a>
+        {% endif %}
+        <a href="{% url 'auth:logout' %}">{% trans "Logout" %}</a>
       {% else %}
-        <a href="{% url 'auth:login' %}">Login</a>
-        <a href="{% url 'auth:register' %}">Register</a>
+        <a href="{% url 'auth:customer-login' %}">{% trans "Login" %}</a>
+        <a href="{% url 'auth:customer-register' %}">{% trans "Register" %}</a>
       {% endif %}
     </nav>
   </div>

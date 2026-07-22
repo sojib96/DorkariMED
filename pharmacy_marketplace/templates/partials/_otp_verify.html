@@ -1,0 +1,236 @@
+{% load i18n %}
+{% comment %}
+  OTP verification inline partial.
+  Used by both customer and owner registration flows.
+  After registration form succeeds, this partial replaces the form.
+  
+  Flow:
+  1. On load, sends POST to /api/v1/auth/otp/send/ to trigger OTP
+  2. User enters 6-digit code
+  3. On submit, sends POST to /api/v1/auth/otp/verify/
+  4. On success, redirects to destination
+{% endcomment %}
+
+<div class="otp-section" id="otp-section"
+     data-phone="{{ phone }}"
+     data-redirect-url="{{ redirect_url }}"
+     data-error-url="{{ error_url }}">
+  <h2>{% trans "Verify Your Phone" %}</h2>
+  <p class="otp-description">
+    {% blocktrans with masked=phone|slice:":2"|add:"XXXXX"|add:phone|slice:"-4:" %}
+      We've sent a 6-digit code to {{ masked }}
+    {% endblocktrans %}
+  </p>
+
+  {% trans "Could not send verification code. Please try again." as otp_fail_msg %}
+  {% include "partials/_alert.html" with type="error" message=otp_fail_msg dismissible=True %}
+
+  <form id="otp-form"
+        hx-post="/api/v1/auth/otp/verify/"
+        hx-target="#otp-section"
+        hx-swap="outerHTML"
+        hx-trigger="submit">
+    {% csrf_token %}
+    <input type="hidden" name="phone" value="{{ phone }}">
+
+    <div class="otp-input-group" role="group" aria-label="{% trans 'Verification code input' %}">
+      {% for i in "123456" %}
+      <input type="text"
+             inputmode="numeric"
+             pattern="[0-9]"
+             maxlength="1"
+             class="otp-box"
+             id="otp-{{ forloop.counter }}"
+             name="code_{{ forloop.counter0 }}"
+             aria-label="{% blocktrans with n=forloop.counter %}Digit {{ n }} of 6{% endblocktrans %}"
+             autocomplete="one-time-code"
+             required>
+      {% endfor %}
+    </div>
+
+    <field-error style="display:none;" class="field-error" id="otp-error" role="alert"></field-error>
+
+    <button type="submit" class="btn btn-primary btn-full" id="otp-submit-btn" disabled>
+      {% trans "Verify" %}
+    </button>
+  </form>
+
+  <div class="mt-4 text-center">
+    <p class="text-sm text-muted" id="otp-timer" data-seconds="60">
+      {% trans "Didn't receive the code?" %}
+      <button type="button" class="btn-ghost" id="otp-resend-btn" disabled
+              style="font-size:var(--text-sm);padding:0.25rem 0.5rem;min-height:auto;border:none;background:none;color:var(--color-primary);cursor:pointer;">
+        {% trans "Resend" %}
+        <span id="otp-countdown">(60s)</span>
+      </button>
+    </p>
+    <a href="{{ error_url }}" class="text-sm" style="color:var(--color-gray-400);">
+      {% trans "Use a different phone number" %}
+    </a>
+  </div>
+</div>
+
+{% block extra_scripts %}
+<script>
+(function() {
+  const section = document.getElementById('otp-section');
+  if (!section) return;
+
+  const phone = section.dataset.phone;
+  const redirectUrl = section.dataset.redirectUrl;
+  const form = document.getElementById('otp-form');
+  const boxes = document.querySelectorAll('.otp-box');
+  const submitBtn = document.getElementById('otp-submit-btn');
+  const errorDiv = document.getElementById('otp-error');
+  const resendBtn = document.getElementById('otp-resend-btn');
+  const countdown = document.getElementById('otp-countdown');
+  let timerSeconds = 60;
+  let timerInterval;
+
+  // ── Send OTP on load ────────────────────────────────────────────────────
+  function sendOtp() {
+    fetch('/api/v1/auth/otp/send/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+      },
+      body: JSON.stringify({ phone: phone })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        showError(data.error.message || 'Could not send code.');
+      }
+    })
+    .catch(function() {
+      showError('Connection lost. Please try again.');
+    });
+  }
+  sendOtp();
+
+  // ── Timer ────────────────────────────────────────────────────────────────
+  function startTimer() {
+    timerSeconds = 60;
+    resendBtn.disabled = true;
+    updateCountdown();
+    timerInterval = setInterval(function() {
+      timerSeconds--;
+      updateCountdown();
+      if (timerSeconds <= 0) {
+        clearInterval(timerInterval);
+        resendBtn.disabled = false;
+        countdown.textContent = '';
+      }
+    }, 1000);
+  }
+
+  function updateCountdown() {
+    countdown.textContent = '(' + timerSeconds + 's)';
+  }
+
+  startTimer();
+
+  // ── Resend ───────────────────────────────────────────────────────────────
+  resendBtn.addEventListener('click', function() {
+    startTimer();
+    sendOtp();
+  });
+
+  // ── OTP input behavior ──────────────────────────────────────────────────
+  boxes.forEach(function(box, index) {
+    box.addEventListener('input', function() {
+      this.value = this.value.replace(/[^0-9]/g, '').slice(0, 1);
+      if (this.value && index < boxes.length - 1) boxes[index + 1].focus();
+      updateSubmitState();
+    });
+    box.addEventListener('keydown', function(e) {
+      if (e.key === 'Backspace' && !this.value && index > 0) boxes[index - 1].focus();
+      if (e.key === 'ArrowLeft' && index > 0) boxes[index - 1].focus();
+      if (e.key === 'ArrowRight' && index < boxes.length - 1) boxes[index + 1].focus();
+    });
+    box.addEventListener('paste', function(e) {
+      e.preventDefault();
+      var paste = (e.clipboardData || window.clipboardData).getData('text');
+      var digits = paste.replace(/[^0-9]/g, '').slice(0, boxes.length);
+      digits.split('').forEach(function(d, i) { if (boxes[i]) boxes[i].value = d; });
+      updateSubmitState();
+      if (digits.length === boxes.length) boxes[boxes.length - 1].focus();
+      else if (digits.length) boxes[Math.min(digits.length, boxes.length - 1)].focus();
+    });
+  });
+
+  function updateSubmitState() {
+    var allFilled = Array.from(boxes).every(function(b) { return b.value.length === 1; });
+    submitBtn.disabled = !allFilled;
+    boxes.forEach(function(b) {
+      b.classList.toggle('filled', b.value.length > 0);
+      b.classList.remove('error');
+    });
+    if (errorDiv) errorDiv.style.display = 'none';
+    // Auto-submit after 300ms debounce
+    if (allFilled) {
+      clearTimeout(window._otpAutoSubmit);
+      window._otpAutoSubmit = setTimeout(function() { form.dispatchEvent(new Event('submit')); }, 300);
+    }
+  }
+
+  // ── Show error ──────────────────────────────────────────────────────────
+  function showError(msg) {
+    if (errorDiv) {
+      errorDiv.textContent = msg;
+      errorDiv.style.display = 'block';
+    }
+    boxes.forEach(function(b) { b.classList.add('error'); });
+  }
+
+  // ── Form submission ─────────────────────────────────────────────────────
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (submitBtn.disabled) return;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner"></span> Verifying…';
+
+    var code = '';
+    boxes.forEach(function(b) { code += b.value; });
+
+    fetch('/api/v1/auth/otp/verify/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+      },
+      body: JSON.stringify({ phone: phone, code: code })
+    })
+    .then(function(r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
+    .then(function(result) {
+      if (result.status === 200 && result.data.is_phone_verified) {
+        // Success — redirect
+        clearInterval(timerInterval);
+        window.location.href = redirectUrl;
+      } else if (result.data.error) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Verify';
+        var msg = result.data.error.message || 'Invalid code. Please try again.';
+        showError(msg);
+        // Extract remaining attempts from error message if present
+        var match = msg.match(/(\d+)\s*attempt/);
+        if (match && parseInt(match[1]) <= 0) {
+          showError('Too many incorrect attempts. Please request a new code.');
+          setTimeout(function() { window.location.href = section.dataset.errorUrl; }, 2000);
+        }
+        // Focus first box and clear for retry
+        boxes.forEach(function(b) { b.value = ''; });
+        if (boxes[0]) boxes[0].focus();
+        updateSubmitState();
+      }
+    })
+    .catch(function() {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Verify';
+      showError('Could not verify code. Check your connection and try again.');
+    });
+  });
+})();
+</script>
+{% endblock extra_scripts %}

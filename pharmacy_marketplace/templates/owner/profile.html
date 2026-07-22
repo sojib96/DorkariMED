@@ -1,0 +1,12 @@
+{% extends "owner/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Pharmacy Profile" %} — Pharmacy Marketplace{% endblock %}
+
+{% block dashboard_content %}
+<div class="card" style="max-width:640px;">
+  <h1>{% trans "Pharmacy Profile" %}</h1>
+  <p class="subtitle">{% trans "Profile editing will be available in Phase 2." %}</p>
+  <a href="{% url 'owner:dashboard' %}" class="btn btn-secondary mt-4">{% trans "Back to Dashboard" %}</a>
+</div>
+{% endblock %}

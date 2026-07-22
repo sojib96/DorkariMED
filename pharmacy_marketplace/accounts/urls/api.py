@@ -8,7 +8,7 @@ root URLconf). This follows architect.md Section 5.2.
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from accounts.views import (
+from accounts.api_views import (
     CustomerRegistrationView,
     LoginView,
     PharmacyOwnerRegistrationView,

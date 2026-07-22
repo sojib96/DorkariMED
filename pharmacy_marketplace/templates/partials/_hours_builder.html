@@ -1,0 +1,139 @@
+{% load i18n %}
+{% comment %}
+  Operating hours builder partial.
+  Renders 7 rows (Mon–Sun) with open/close time selects and "Closed" toggle.
+  Usage: {% include "partials/_hours_builder.html" %}
+  Data submitted via hidden input serialized by Alpine.js on form submit.
+{% endcomment %}
+
+<div class="hours-builder"
+     x-data="hoursBuilder()"
+     x-init="init()">
+
+  <template x-for="(day, key) in days" :key="key">
+    <div class="hours-row">
+      <span class="hours-day" x-text="day.label"></span>
+
+      <select x-model="day.open" :name="'operating_hours_' + key + '_open'" :disabled="day.closed"
+              class="input" style="min-height:36px;width:auto;padding:0.25rem 0.5rem;font-size:var(--text-sm);">
+        <option value="00:00">00:00</option><option value="00:30">00:30</option>
+        <option value="01:00">01:00</option><option value="01:30">01:30</option>
+        <option value="02:00">02:00</option><option value="02:30">02:30</option>
+        <option value="03:00">03:00</option><option value="03:30">03:30</option>
+        <option value="04:00">04:00</option><option value="04:30">04:30</option>
+        <option value="05:00">05:00</option><option value="05:30">05:30</option>
+        <option value="06:00">06:00</option><option value="06:30">06:30</option>
+        <option value="07:00">07:00</option><option value="07:30">07:30</option>
+        <option value="08:00">08:00</option><option value="08:30">08:30</option>
+        <option value="09:00">09:00</option><option value="09:30">09:30</option>
+        <option value="10:00">10:00</option><option value="10:30">10:30</option>
+        <option value="11:00">11:00</option><option value="11:30">11:30</option>
+        <option value="12:00">12:00</option><option value="12:30">12:30</option>
+        <option value="13:00">13:00</option><option value="13:30">13:30</option>
+        <option value="14:00">14:00</option><option value="14:30">14:30</option>
+        <option value="15:00">15:00</option><option value="15:30">15:30</option>
+        <option value="16:00">16:00</option><option value="16:30">16:30</option>
+        <option value="17:00">17:00</option><option value="17:30">17:30</option>
+        <option value="18:00">18:00</option><option value="18:30">18:30</option>
+        <option value="19:00">19:00</option><option value="19:30">19:30</option>
+        <option value="20:00">20:00</option><option value="20:30">20:30</option>
+        <option value="21:00">21:00</option><option value="21:30">21:30</option>
+        <option value="22:00">22:00</option><option value="22:30">22:30</option>
+        <option value="23:00">23:00</option><option value="23:30">23:30</option>
+      </select>
+
+      <span class="hours-separator">—</span>
+
+      <select x-model="day.close" :name="'operating_hours_' + key + '_close'" :disabled="day.closed"
+              class="input" style="min-height:36px;width:auto;padding:0.25rem 0.5rem;font-size:var(--text-sm);">
+        <option value="00:00">00:00</option><option value="00:30">00:30</option>
+        <option value="01:00">01:00</option><option value="01:30">01:30</option>
+        <option value="02:00">02:00</option><option value="02:30">02:30</option>
+        <option value="03:00">03:00</option><option value="03:30">03:30</option>
+        <option value="04:00">04:00</option><option value="04:30">04:30</option>
+        <option value="05:00">05:00</option><option value="05:30">05:30</option>
+        <option value="06:00">06:00</option><option value="06:30">06:30</option>
+        <option value="07:00">07:00</option><option value="07:30">07:30</option>
+        <option value="08:00">08:00</option><option value="08:30">08:30</option>
+        <option value="09:00">09:00</option><option value="09:30">09:30</option>
+        <option value="10:00">10:00</option><option value="10:30">10:30</option>
+        <option value="11:00">11:00</option><option value="11:30">11:30</option>
+        <option value="12:00">12:00</option><option value="12:30">12:30</option>
+        <option value="13:00">13:00</option><option value="13:30">13:30</option>
+        <option value="14:00">14:00</option><option value="14:30">14:30</option>
+        <option value="15:00">15:00</option><option value="15:30">15:30</option>
+        <option value="16:00">16:00</option><option value="16:30">16:30</option>
+        <option value="17:00">17:00</option><option value="17:30">17:30</option>
+        <option value="18:00">18:00</option><option value="18:30">18:30</option>
+        <option value="19:00">19:00</option><option value="19:30">19:30</option>
+        <option value="20:00">20:00</option><option value="20:30">20:30</option>
+        <option value="21:00">21:00</option><option value="21:30">21:30</option>
+        <option value="22:00">22:00</option><option value="22:30">22:30</option>
+        <option value="23:00">23:00</option><option value="23:30">23:30</option>
+      </select>
+
+      <label class="hours-closed-label">
+        <input type="checkbox" x-model="day.closed" @change="onToggleClosed(key)">
+        {% trans "Closed" %}
+      </label>
+
+      <template x-if="day.error">
+        <span class="field-error" x-text="day.error"></span>
+      </template>
+    </div>
+  </template>
+
+  <input type="hidden" name="operating_hours" x-bind:value="getHoursJSON()">
+</div>
+
+<script>
+function hoursBuilder() {
+  return {
+    days: {},
+    init: function() {
+      var dayMeta = {
+        mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday',
+        thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday'
+      };
+      var defaults = {
+        mon: { open: '09:00', close: '21:00' },
+        tue: { open: '09:00', close: '21:00' },
+        wed: { open: '09:00', close: '21:00' },
+        thu: { open: '09:00', close: '21:00' },
+        fri: { open: '14:00', close: '21:00' },
+        sat: { open: '09:00', close: '21:00' },
+        sun: { open: '09:00', close: '21:00' }
+      };
+      var self = this;
+      Object.keys(dayMeta).forEach(function(key) {
+        self.days[key] = {
+          label: dayMeta[key],
+          open: defaults[key].open,
+          close: defaults[key].close,
+          closed: false,
+          error: ''
+        };
+      });
+    },
+    onToggleClosed: function(key) {
+      this.days[key].error = '';
+    },
+    getHoursJSON: function() {
+      var result = {};
+      var self = this;
+      Object.keys(self.days).forEach(function(key) {
+        var day = self.days[key];
+        if (!day.closed) {
+          if (day.open >= day.close) {
+            day.error = 'Close time must be after open time.';
+          } else {
+            day.error = '';
+          }
+          result[key] = { open: day.open, close: day.close };
+        }
+      });
+      return JSON.stringify(result);
+    }
+  };
+}
+</script>

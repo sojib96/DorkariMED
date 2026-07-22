@@ -7,7 +7,8 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import Client, TestCase
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -352,7 +353,7 @@ class OTPSendTests(TestCase):
         self.assertEqual(call_args[0][0], self.phone)  # phone arg
         self.assertIn("verification code", call_args[0][1].lower())
 
-    @patch("accounts.views.get_sms_sender")
+    @patch("accounts.api_views.get_sms_sender")
     def test_otp_send_rate_limit(self, mock_get_sender):
         """Rate limit blocks after 5 requests per phone per hour."""
         mock_get_sender.return_value.send_sms.return_value = True
@@ -512,3 +513,384 @@ class OTPVerifyTests(TestCase):
 
         user = User.objects.get(phone=self.phone)
         self.assertTrue(user.is_phone_verified)
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# F1-08: Web auth integration tests (session-based, Django template views)
+# Tested with django.test.Client to exercise the full request/response cycle
+# for web registration, login, logout, and the dashboard shell.
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class WebCustomerRegistrationTests(TestCase):
+    """F1-04 / F1-08: Customer registration via web form (session-based).
+
+    Tests GET (form render), POST valid (creates user + returns OTP partial),
+    POST invalid (validation errors re-rendered), and duplicate phone.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.url = reverse("auth:customer-register")
+        self.valid_payload = {
+            "full_name": "Test Customer",
+            "phone": "01712345678",
+            "password": "securepass123",
+            "confirm_password": "securepass123",
+        }
+
+    def test_get_renders_form(self):
+        """GET /customer/register/ renders the registration form."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "customer/register.html")
+        # Form fields should be present
+        self.assertContains(response, 'name="full_name"')
+        self.assertContains(response, 'name="phone"')
+        self.assertContains(response, 'name="password"')
+        self.assertContains(response, 'name="confirm_password"')
+
+    def test_post_valid_creates_user(self):
+        """POST with valid data creates a user and returns OTP partial."""
+        response = self.client.post(self.url, self.valid_payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "partials/_otp_verify.html")
+        # User created
+        self.assertTrue(User.objects.filter(phone="01712345678").exists())
+        # User is logged in (session has user)
+        self.assertEqual(self.client.session["_auth_user_id"], str(User.objects.get(phone="01712345678").pk))
+
+    def test_post_duplicate_phone(self):
+        """POST with existing phone re-renders form with error."""
+        # Create user first
+        User.objects.create_user(
+            phone="01712345678", password="pass123",
+            full_name="Existing", role=User.Role.CUSTOMER,
+        )
+        response = self.client.post(self.url, self.valid_payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "customer/register.html")
+        self.assertContains(response, "already registered")
+
+    def test_post_missing_full_name(self):
+        """Missing full name returns validation error."""
+        payload = {**self.valid_payload, "full_name": ""}
+        response = self.client.post(self.url, payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "customer/register.html")
+        self.assertContains(response, "full name")
+
+    def test_post_invalid_phone(self):
+        """Invalid phone format returns validation error."""
+        payload = {**self.valid_payload, "phone": "12345"}
+        response = self.client.post(self.url, payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "valid Bangladeshi")
+
+    def test_post_short_password(self):
+        """Short password returns validation error."""
+        payload = {**self.valid_payload, "password": "short"}
+        response = self.client.post(self.url, payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "at least 8")
+
+    def test_post_password_mismatch(self):
+        """Mismatched passwords returns validation error."""
+        payload = {**self.valid_payload, "password": "pass12345", "confirm_password": "diffpass56"}
+        response = self.client.post(self.url, payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "do not match")
+
+    def test_authenticated_user_redirects(self):
+        """Logged-in user submitting the form gets redirected."""
+        User.objects.create_user(
+            phone="01999999999", password="pass123",
+            full_name="Logged In", role=User.Role.CUSTOMER,
+        )
+        self.client.login(phone="01999999999", password="pass123")
+        response = self.client.post(self.url, self.valid_payload)
+        self.assertIn(response.status_code, [302, 200])
+        if response.status_code == 200:
+            self.assertContains(response, "already logged in", html=False)
+
+
+class WebCustomerLoginTests(TestCase):
+    """F1-05 / F1-08: Customer login via web form (session-based)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.url = reverse("auth:customer-login")
+        self.user = User.objects.create_user(
+            phone="01712345678", password="testpass123",
+            full_name="Test Customer", role=User.Role.CUSTOMER,
+        )
+
+    def test_get_renders_form(self):
+        """GET /customer/login/ renders the login form."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "customer/login.html")
+        self.assertContains(response, 'name="phone"')
+        self.assertContains(response, 'name="password"')
+
+    def test_post_valid_authenticates(self):
+        """POST with valid credentials logs the user in."""
+        response = self.client.post(self.url, {
+            "phone": "01712345678", "password": "testpass123",
+        })
+        self.assertIn(response.status_code, [302, 200])
+        self.assertEqual(
+            str(self.client.session["_auth_user_id"]),
+            str(self.user.pk),
+        )
+
+    def test_post_invalid_credentials(self):
+        """POST with wrong password returns form with error."""
+        response = self.client.post(self.url, {
+            "phone": "01712345678", "password": "wrongpass",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "customer/login.html")
+        self.assertContains(response, "Invalid phone number or password")
+
+    def test_post_missing_fields(self):
+        """Missing phone or password returns form with errors."""
+        response = self.client.post(self.url, {"phone": "", "password": ""})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "phone number")
+        self.assertContains(response, "password")
+
+    def test_authenticated_user_gets_already_logged_in_context(self):
+        """Logged-in user gets already_logged_in context flag."""
+        self.client.login(phone="01712345678", password="testpass123")
+        response = self.client.get(self.url)
+        context = response.context[-1]
+        self.assertTrue(context.get("already_logged_in"))
+
+
+class WebOwnerRegistrationTests(TestCase):
+    """F1-06 / F1-08: Owner registration — Step 1 (account info).
+
+    Full multi-step flow (steps 2-4) requires PostGIS (Pharmacy model).
+    Step 1 (user account, no GIS dependency) is tested here.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.url = reverse("auth:owner-register")
+        self.step1_payload = {
+            "step": "0",
+            "full_name": "Test Owner",
+            "phone": "01798765432",
+            "password": "ownerpass456",
+            "confirm_password": "ownerpass456",
+        }
+
+    def test_get_renders_step1(self):
+        """GET /owner/register/ renders step 1 of the registration form."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "owner/register.html")
+        # Step indicator should show step 1 as current
+        self.assertContains(response, "Step 1 of 4")
+        self.assertContains(response, 'name="full_name"')
+        self.assertContains(response, 'name="phone"')
+        self.assertContains(response, 'name="password"')
+        self.assertContains(response, 'name="confirm_password"')
+
+    def test_step1_valid_saves_to_session(self):
+        """POST step 1 with valid data advances to step 2 (pharmacy details)."""
+        response = self.client.post(self.url, self.step1_payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "owner/register.html")
+        self.assertContains(response, "Step 2 of 4")
+        # Check session data
+        self.assertIn("owner_registration", self.client.session)
+        self.assertEqual(
+            self.client.session["owner_registration"]["full_name"],
+            "Test Owner",
+        )
+
+    def test_step1_missing_full_name(self):
+        """Missing full name returns validation error on step 1."""
+        payload = {**self.step1_payload, "full_name": ""}
+        response = self.client.post(self.url, payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Please enter your full name")
+
+    def test_step1_invalid_phone(self):
+        """Invalid phone returns validation error on step 1."""
+        payload = {**self.step1_payload, "phone": "12345"}
+        response = self.client.post(self.url, payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "valid Bangladeshi")
+
+    def test_step1_duplicate_phone(self):
+        """Duplicate phone returns validation error on step 1."""
+        User.objects.create_user(
+            phone="01798765432", password="pass123",
+            full_name="Existing", role=User.Role.CUSTOMER,
+        )
+        response = self.client.post(self.url, self.step1_payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "already registered")
+
+    def test_step1_password_mismatch(self):
+        """Password mismatch returns validation error."""
+        payload = {**self.step1_payload, "password": "pass12345", "confirm_password": "diffpass56"}
+        response = self.client.post(self.url, payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "do not match")
+
+    def test_step1_short_password(self):
+        """Short password returns validation error."""
+        payload = {**self.step1_payload, "password": "short"}
+        response = self.client.post(self.url, payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "at least 8")
+
+    def test_authenticated_user_redirects(self):
+        """Already authenticated user is redirected to dashboard."""
+        User.objects.create_user(
+            phone="01999999999", password="pass123",
+            full_name="LoggedIn Owner", role=User.Role.PHARMACY_OWNER,
+        )
+        self.client.login(phone="01999999999", password="pass123")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("dashboard", response.url)
+
+
+class WebOwnerLoginTests(TestCase):
+    """F1-07 / F1-08: Owner login via web form (session-based)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.url = reverse("auth:owner-login")
+        self.user = User.objects.create_user(
+            phone="01798765432", password="ownerpass456",
+            full_name="Test Owner", role=User.Role.PHARMACY_OWNER,
+        )
+
+    def test_get_renders_form(self):
+        """GET /owner/login/ renders the owner login form."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "owner/login.html")
+        self.assertContains(response, 'name="phone"')
+        self.assertContains(response, 'name="password"')
+
+    def test_post_valid_authenticates(self):
+        """POST with valid credentials logs the owner in."""
+        response = self.client.post(self.url, {
+            "phone": "01798765432", "password": "ownerpass456",
+        })
+        self.assertIn(response.status_code, [302, 200])
+        self.assertEqual(
+            str(self.client.session["_auth_user_id"]),
+            str(self.user.pk),
+        )
+
+    def test_post_invalid_credentials(self):
+        """POST with wrong password returns form with error."""
+        response = self.client.post(self.url, {
+            "phone": "01798765432", "password": "wrongpass",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Invalid phone number or password")
+
+    def test_post_customer_role_rejected(self):
+        """Customer user trying owner login sees role-specific error."""
+        User.objects.create_user(
+            phone="01700000000", password="pass123",
+            full_name="Customer User", role=User.Role.CUSTOMER,
+        )
+        response = self.client.post(self.url, {
+            "phone": "01700000000", "password": "pass123",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "not registered as a pharmacy owner")
+
+    def test_authenticated_user_redirects(self):
+        """Already authenticated owner is redirected to dashboard."""
+        self.client.login(phone="01798765432", password="ownerpass456")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("dashboard", response.url)
+
+
+class WebOwnerDashboardTests(TestCase):
+    """F1-07 / F1-08: Owner dashboard shell — auth protection, data display."""
+
+    def setUp(self):
+        self.client = Client()
+        self.url = reverse("owner:dashboard")
+
+    def test_unauthenticated_redirects_to_login(self):
+        """Unauthenticated user is redirected to owner login."""
+        response = self.client.get(self.url)
+        self.assertIn(response.status_code, [302, 200])
+        if response.status_code == 302:
+            self.assertIn("login", response.url)
+
+    def test_authenticated_renders_template(self):
+        """Authenticated owner sees the dashboard template."""
+        user = User.objects.create_user(
+            phone="01798765432", password="pass123",
+            full_name="Dashboard Owner", role=User.Role.PHARMACY_OWNER,
+        )
+        self.client.login(phone="01798765432", password="pass123")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "owner/dashboard.html")
+
+    def test_dashboard_shows_welcome(self):
+        """Dashboard displays the welcome card."""
+        user = User.objects.create_user(
+            phone="01798765432", password="pass123",
+            full_name="Welcome User", role=User.Role.PHARMACY_OWNER,
+        )
+        self.client.login(phone="01798765432", password="pass123")
+        response = self.client.get(self.url)
+        self.assertContains(response, "Welcome")
+
+
+class WebLogoutTests(TestCase):
+    """F1-08: Logout redirects appropriately based on role."""
+
+    def setUp(self):
+        self.client = Client()
+        self.url = reverse("auth:logout")
+
+    def test_logout_clears_session(self):
+        """POST to logout clears the session."""
+        User.objects.create_user(
+            phone="01712345678", password="pass123",
+            full_name="Logout User", role=User.Role.CUSTOMER,
+        )
+        self.client.login(phone="01712345678", password="pass123")
+        self.assertIn("_auth_user_id", self.client.session)
+        response = self.client.post(self.url)
+        self.assertIn(response.status_code, [302, 200])
+        # Session should be cleared
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_logout_owner_redirects_to_owner_login(self):
+        """Owner logout redirects to /owner/login/."""
+        User.objects.create_user(
+            phone="01798765432", password="pass123",
+            full_name="Owner Logout", role=User.Role.PHARMACY_OWNER,
+        )
+        self.client.login(phone="01798765432", password="pass123")
+        response = self.client.post(self.url)
+        self.assertIn(response.status_code, [302, 200])
+
+    def test_logout_customer_redirects_to_home(self):
+        """Customer logout redirects to /."""
+        User.objects.create_user(
+            phone="01712345678", password="pass123",
+            full_name="Customer Logout", role=User.Role.CUSTOMER,
+        )
+        self.client.login(phone="01712345678", password="pass123")
+        response = self.client.post(self.url)
+        self.assertIn(response.status_code, [302, 200])

@@ -1,22 +1,144 @@
 {% extends "owner/base.html" %}
-{% load i18n %}
+{% load i18n static %}
 
 {% block title %}{% trans "Owner Dashboard" %} — Pharmacy Marketplace{% endblock %}
 
-{% block content %}
-<section class="dashboard">
-  <h1>{% trans "My Pharmacy" %}</h1>
-  <p>{% trans "Manage your storefront, medicine listings, and settings." %}</p>
+{% block dashboard_content %}
+<section class="dashboard-content" id="dashboard-content">
 
-  <div class="dashboard-cards">
-    <a href="{% url 'owner-catalog:listing-list' %}" class="card">
-      <h2>{% trans "Medicine Listings" %}</h2>
-      <p>{% trans "View and manage your listed medicines" %}</p>
-    </a>
-    <a href="{% url 'owner:profile' %}" class="card">
-      <h2>{% trans "Pharmacy Profile" %}</h2>
-      <p>{% trans "Update your pharmacy details and hours" %}</p>
-    </a>
-  </div>
+  {% if error %}
+    {# ── Error state ── #}
+    <div class="error-banner">
+      <p>{{ error }}</p>
+      <button type="button" class="btn btn-secondary btn-sm"
+              onclick="window.location.reload()">{% trans "Retry" %}</button>
+    </div>
+  {% endif %}
+
+  {% if pharmacy and pharmacy.status == "suspended" %}
+    {# ── Suspended banner ── #}
+    <div class="suspended-banner" role="alert">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+      </svg>
+      <p>{% trans "Your storefront is currently suspended. Contact support for details." %}</p>
+    </div>
+  {% endif %}
+
+  {% if has_pharmacy %}
+    {# ── Normal / First-login state ── #}
+
+    {# Welcome card #}
+    {% if is_first_login %}
+      <div class="welcome-card">
+        <h2>{% blocktrans with name=user.full_name|default:user.phone %}Welcome, {{ name }}!{% endblocktrans %}</h2>
+        <p>{% trans "Welcome to your dashboard! Get started by setting up your storefront." %}</p>
+        <a href="{% url 'owner:profile' %}" class="btn btn-sm">{% trans "Set Up Your Pharmacy" %}</a>
+      </div>
+    {% else %}
+      <div class="welcome-card">
+        <h2>{% blocktrans with name=user.full_name|default:user.phone %}Welcome back, {{ name }}!{% endblocktrans %}</h2>
+        <p>{% trans "Here's a snapshot of your pharmacy today." %}</p>
+      </div>
+    {% endif %}
+
+    {# Summary cards #}
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-card-icon primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/>
+          </svg>
+        </div>
+        <div class="summary-card-body">
+          <div class="label">{% trans "Total Medicines" %}</div>
+          <div class="value">0</div>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-card-icon warning">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </div>
+        <div class="summary-card-body">
+          <div class="label">{% trans "Storefront Views" %}</div>
+          <div class="value muted">&mdash;</div>
+          <div class="trend" style="color:var(--color-gray-400);font-size:var(--text-xs);">{% trans "Coming soon" %}</div>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-card-icon success">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+          </svg>
+        </div>
+        <div class="summary-card-body">
+          <div class="label">{% trans "Account Status" %}</div>
+          <div>
+            <span class="badge {{ pharmacy_status_badge|default:'badge-success' }}">
+              {{ pharmacy_status_display|default:_("Active") }}
+            </span>
+          </div>
+          {% if pharmacy and pharmacy.phone_verified_at %}
+            <div style="font-size:var(--text-xs);color:var(--color-gray-400);margin-top:var(--space-1);">
+              {% trans "Phone verified" %}
+            </div>
+          {% elif pharmacy %}
+            <div style="font-size:var(--text-xs);color:var(--color-warning);margin-top:var(--space-1);">
+              {% trans "Phone verification pending" %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# Quick actions #}
+    <div class="quick-actions">
+      <h3>{% trans "Quick Actions" %}</h3>
+      <div class="quick-actions-grid">
+        <div class="quick-action-card disabled" title="{% trans 'Coming in Phase 2' %}">
+          <span class="badge badge-warning badge-xs badge-top-right">{% trans "Phase 2" %}</span>
+          <h4>{% trans "Add Medicines" %}</h4>
+          <p>{% trans "List new medicines for your storefront" %}</p>
+          <button type="button" class="btn btn-secondary btn-sm" disabled>{% trans "Add" %}</button>
+        </div>
+
+        <a href="{% url 'owner:profile' %}" class="quick-action-card">
+          <h4>{% trans "Edit Profile" %}</h4>
+          <p>{% trans "Update your pharmacy details and hours" %}</p>
+          <span class="btn btn-secondary btn-sm">{% trans "Edit" %}</span>
+        </a>
+
+        <a href="{% url 'store:home' %}" class="quick-action-card" target="_blank" rel="noopener">
+          <h4>{% trans "View Storefront" %}</h4>
+          <p>{% trans "See your pharmacy as customers see it" %}</p>
+          <span class="btn btn-secondary btn-sm">{% trans "Open" %}</span>
+        </a>
+      </div>
+    </div>
+
+    {# Recent activity #}
+    <div class="recent-activity">
+      <h3>{% trans "Recent Activity" %}</h3>
+      <div class="activity-empty">
+        <p>{% trans "No recent activity yet. Your storefront activity will appear here." %}</p>
+      </div>
+    </div>
+
+  {% else %}
+    {# ── No pharmacy yet state (shouldn't normally occur post-registration) ── #}
+    <div class="card" style="text-align:center;padding:var(--space-8);">
+      <h2 style="font-size:var(--text-lg);margin-bottom:var(--space-2);">{% trans "No Pharmacy Found" %}</h2>
+      <p style="color:var(--color-gray-400);">{% trans "Your account doesn't have a pharmacy yet. Complete your registration to get started." %}</p>
+      <a href="{% url 'owner:profile' %}" class="btn btn-primary" style="margin-top:var(--space-4);background:var(--color-owner-accent);">
+        {% trans "Set Up Your Pharmacy" %}
+      </a>
+    </div>
+  {% endif %}
+
 </section>
 {% endblock %}

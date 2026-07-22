@@ -1,0 +1,36 @@
+{% load i18n %}
+{% comment %}
+  Step indicator for multi-step forms.
+  Usage: {% include "partials/_step_indicator.html" with step_labels="Step 1|Step 2|Step 3|Step 4" current_step=0 %}
+  step_labels: pipe-separated list of labels
+  current_step: 0-based index of active step
+{% endcomment %}
+{% if step_labels %}
+{% with labels=step_labels|split:"|" %}
+<nav class="step-indicator" role="progressbar" aria-valuenow="{{ current_step|add:1 }}" aria-valuemin="1" aria-valuemax="{{ labels|length }}">
+  {% for label in labels %}
+    {% if forloop.counter0 < current_step %}
+      <div class="step-item">
+        <div class="step-circle completed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        </div>
+        <span class="step-label">{{ label }}</span>
+      </div>
+    {% elif forloop.counter0 == current_step %}
+      <div class="step-item">
+        <div class="step-circle current">{{ forloop.counter }}</div>
+        <span class="step-label">{{ label }}</span>
+      </div>
+    {% else %}
+      <div class="step-item">
+        <div class="step-circle upcoming">{{ forloop.counter }}</div>
+        <span class="step-label">{{ label }}</span>
+      </div>
+    {% endif %}
+    {% if not forloop.last %}
+      <div class="step-line {% if forloop.counter0 < current_step %}completed{% endif %}"></div>
+    {% endif %}
+  {% endfor %}
+</nav>
+{% endwith %}
+{% endif %}
