@@ -493,10 +493,10 @@ class OwnerDashboardView(LoginRequiredMixin, TemplateView):
                 "pending_review": "badge-warning",
             }.get(pharmacy.status, "badge-info")
 
-            # Determine first-login state
-            context["is_first_login"] = not user.last_login or (
-                user.last_login == user.date_joined
-            )
+            # Determine first-login state.
+            # The custom User model extends AbstractBaseUser (no date_joined field),
+            # so we detect first login by checking last_login is None.
+            context["is_first_login"] = user.last_login is None
 
         return context
 
