@@ -48,12 +48,12 @@
 
       <div class="review-summary">
         <div class="card mb-4">
-          <h3 style="font-size:var(--text-sm);color:var(--color-gray-400);margin-bottom:var(--space-2);">{% trans "Account Information" %}</h3>
+          <h3 style="font-size:var(--text-sm);color:var(--color-muted);margin-bottom:var(--space-2);">{% trans "Account Information" %}</h3>
           <p><strong>{% trans "Name:" %}</strong> {{ values.full_name }}</p>
           <p><strong>{% trans "Phone:" %}</strong> {{ values.phone }}</p>
         </div>
         <div class="card mb-4">
-          <h3 style="font-size:var(--text-sm);color:var(--color-gray-400);margin-bottom:var(--space-2);">{% trans "Pharmacy Details" %}</h3>
+          <h3 style="font-size:var(--text-sm);color:var(--color-muted);margin-bottom:var(--space-2);">{% trans "Pharmacy Details" %}</h3>
           <p><strong>{% trans "Name:" %}</strong> {{ values.pharmacy_name }}</p>
           <p><strong>{% trans "Address:" %}</strong> {{ values.address_line }}</p>
           <p><strong>{% trans "City:" %}</strong> {{ values.city }}</p>
@@ -62,7 +62,7 @@
           {% if values.dgda_license_number %}<p><strong>{% trans "DGDA License:" %}</strong> {{ values.dgda_license_number }}</p>{% endif %}
         </div>
         <div class="card mb-4">
-          <h3 style="font-size:var(--text-sm);color:var(--color-gray-400);margin-bottom:var(--space-2);">{% trans "Location" %}</h3>
+          <h3 style="font-size:var(--text-sm);color:var(--color-muted);margin-bottom:var(--space-2);">{% trans "Location" %}</h3>
           <p><strong>{% trans "Latitude:" %}</strong> {{ values.latitude }}</p>
           <p><strong>{% trans "Longitude:" %}</strong> {{ values.longitude }}</p>
         </div>
@@ -107,7 +107,7 @@
         <input type="hidden" name="step" value="2">
 
         <div class="map-picker" id="map-picker-reg">
-          <div class="map-container" id="map-reg" style="height:300px;background:var(--color-gray-100);">
+          <div class="map-container" id="map-reg" style="height:300px;background:var(--color-surface);">
             <div class="map-placeholder"><span>{% trans "Loading map…" %}</span></div>
           </div>
 

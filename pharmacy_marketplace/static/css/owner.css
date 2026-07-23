@@ -121,12 +121,12 @@
 
 .dashboard-header h1 {
   font-size: var(--text-xl);
-  color: var(--color-gray-800);
+  color: var(--color-heading);
   margin: 0;
 }
 
 .dashboard-header p {
-  color: var(--color-gray-400);
+  color: var(--color-muted);
   font-size: var(--text-sm);
   margin: var(--space-1) 0 0;
 }
@@ -137,7 +137,7 @@
 
 /* ── Welcome card ── */
 .welcome-card {
-  background: linear-gradient(135deg, var(--color-owner-accent) 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, var(--color-owner-accent) 0%, var(--color-owner-accent-dark) 100%);
   color: var(--color-white);
   border-radius: var(--radius);
   padding: var(--space-6);
@@ -187,13 +187,17 @@
 }
 
 .summary-card {
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: var(--space-5);
   display: flex;
   gap: var(--space-4);
   align-items: flex-start;
+  transition: box-shadow var(--transition-base) var(--easing-standard);
+}
+.summary-card:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .summary-card-icon {
@@ -207,7 +211,7 @@
   color: var(--color-white);
 }
 
-.summary-card-icon.primary { background: var(--color-primary); }
+.summary-card-icon.primary { background: var(--color-primary-dark); }
 .summary-card-icon.success { background: var(--color-success); }
 .summary-card-icon.warning { background: var(--color-warning); }
 
@@ -218,7 +222,7 @@
 
 .summary-card-body .label {
   font-size: var(--text-xs);
-  color: var(--color-gray-400);
+  color: var(--color-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 500;
@@ -227,13 +231,13 @@
 .summary-card-body .value {
   font-size: var(--text-2xl);
   font-weight: 700;
-  color: var(--color-gray-800);
+  color: var(--color-heading);
   line-height: 1.2;
   margin-top: var(--space-1);
 }
 
 .summary-card-body .value.muted {
-  color: var(--color-gray-400);
+  color: var(--color-muted);
   font-weight: 400;
 }
 
@@ -249,7 +253,7 @@
 
 .quick-actions h3 {
   font-size: var(--text-base);
-  color: var(--color-gray-800);
+  color: var(--color-heading);
   margin-bottom: var(--space-3);
 }
 
@@ -266,11 +270,15 @@
 }
 
 .quick-action-card {
-  background: var(--color-white);
-  border: 1px solid var(--color-gray-200);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: var(--space-5);
   text-align: center;
+  transition: box-shadow var(--transition-base) var(--easing-standard);
+}
+.quick-action-card:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .quick-action-card.disabled {
@@ -278,23 +286,26 @@
   cursor: not-allowed;
   position: relative;
 }
+.quick-action-card.disabled:hover {
+  box-shadow: none;
+}
 
 .quick-action-card.disabled .btn {
   pointer-events: none;
-  background: var(--color-gray-200);
-  color: var(--color-gray-400);
-  border-color: var(--color-gray-200);
+  background: var(--color-border);
+  color: var(--color-muted);
+  border-color: var(--color-border);
 }
 
 .quick-action-card h4 {
   font-size: var(--text-sm);
-  color: var(--color-gray-800);
+  color: var(--color-heading);
   margin: 0 0 var(--space-2);
 }
 
 .quick-action-card p {
   font-size: var(--text-xs);
-  color: var(--color-gray-400);
+  color: var(--color-muted);
   margin: 0 0 var(--space-3);
 }
 
@@ -311,13 +322,13 @@
 
 .recent-activity h3 {
   font-size: var(--text-base);
-  color: var(--color-gray-800);
+  color: var(--color-heading);
   margin-bottom: var(--space-3);
 }
 
 .activity-empty {
-  background: var(--color-white);
-  border: 1px dashed var(--color-gray-200);
+  background: var(--color-card);
+  border: 1px dashed var(--color-border);
   border-radius: var(--radius);
   padding: var(--space-8);
   text-align: center;
@@ -325,7 +336,7 @@
 
 .activity-empty p {
   font-size: var(--text-sm);
-  color: var(--color-gray-400);
+  color: var(--color-muted);
   margin: 0;
 }
 
@@ -348,7 +359,7 @@
 
 .suspended-banner p {
   font-size: var(--text-sm);
-  color: var(--color-gray-800);
+  color: var(--color-heading);
   margin: 0;
 }
 
@@ -364,7 +375,7 @@
 
 .error-banner p {
   font-size: var(--text-sm);
-  color: var(--color-gray-800);
+  color: var(--color-heading);
   margin: 0 0 var(--space-3);
 }
 

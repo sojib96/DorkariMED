@@ -1,0 +1,8 @@
+# ── Playwright MCP artifacts ──
+.playwright-mcp/
+
+# ── Browser test screenshots / page captures ──
+customer-login.png
+customer-register.png
+customer-register-page.txt
+owner-register-step1.png
