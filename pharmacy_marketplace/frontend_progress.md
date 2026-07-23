@@ -1,8 +1,96 @@
 # Frontend Phase 1 Progress — Web Auth & Dashboard Shells
 
-**Branch:** `phase-1-frontend-web-auth`  
+**Branch:** `phase-1-design-revision`  
 **Date:** July 2026  
 **Status:** Build complete, tests passing (70/70)
+
+---
+
+## Phase 1 Design Revision — Color & Motion Re-skin
+
+**Branch:** `phase-1-design-revision`  
+**Date:** July 2026  
+**Status:** Applied, tests passing (70/70)
+
+### Token Replacement Summary
+
+Complete replacement of the blue-led palette with a green-led, warm-neutral palette per `design.md` Section 2.1:
+
+| Old Token | New Token | Old Value | New Value |
+|---|---|---|---|
+| `--color-primary` | `--color-primary` | `#2563eb` (blue) | `#059669` (emerald-600) |
+| `--color-primary-dark` | `--color-primary-dark` | `#1d4ed8` | `#047857` (emerald-700) |
+| — | `--color-primary-darker` *(new)* | — | `#065f46` (emerald-800) |
+| `--color-primary-light` | `--color-primary-light` | `#dbeafe` | `#d1fae5` (emerald-100) |
+| — | `--color-secondary` *(new)* | — | `#0d9488` (teal-600) |
+| — | `--color-secondary-dark` *(new)* | — | `#0f766e` (teal-700) |
+| — | `--color-secondary-light` *(new)* | — | `#ccfbf1` (teal-100) |
+| `--color-gray-50` | `--color-surface` | `#f9fafb` | `#faf8f5` (warm) |
+| `--color-gray-200` | `--color-border` | `#e5e7eb` | `#e8e4de` (warm) |
+| `--color-gray-400` | `--color-muted` | `#9ca3af` | `#a8a29e` (warm) |
+| `--color-gray-600` | `--color-secondary-text` | `#4b5563` | `#57534e` (warm) |
+| `--color-gray-800` | `--color-heading` | `#1f2937` | `#292524` (warm) |
+| `--color-gray-900` | `--color-strong-text` | `#111827` | `#1c1917` (warm) |
+| `--color-owner-accent` | `--color-owner-accent` | `#7c3aed` (violet) | `#4f46e5` (indigo-600) |
+| — | `--color-owner-accent-dark` *(new)* | — | `#4338ca` (indigo-700) |
+| `--color-info-light` | *(removed)* use `--color-primary-light` | `#dbeafe` | `#d1fae5` |
+
+### Motion Tokens Added (Section 2.7)
+
+- `--transition-fast`: 100ms — button press, hover
+- `--transition-base`: 200ms — validation, card hover
+- `--transition-slow`: 300ms — step transitions, alert entrance
+- `--easing-out`, `--easing-in`, `--easing-standard`, `--easing-bounce`
+- Performance rule: only `transform`, `opacity`, `box-shadow`, `background-color`, `border-color`
+
+### Component Changes Applied
+
+| Component | Changes |
+|---|---|
+| **Button** | `.btn-primary` default → `--color-primary-dark`, hover → `--color-primary-darker`; motion tokens on transitions; active scale 0.97; disabled uses `--color-border`/`--color-muted` |
+| **Card** | Transition timing → `var(--transition-base) var(--easing-standard)` |
+| **Badge** | `.badge-price` variant added (`--color-secondary-light` bg, `--color-secondary-dark` text); `.badge-info` uses `--color-primary-light` |
+| **Alert** | `.alert-info` uses `--color-primary-light` bg, `--color-primary-dark` text |
+| **Input** | Focus ring uses `--color-primary-dark` (rgba(4,120,87,0.15)) |
+| **Step Indicator** | Colors updated; current step ring → `rgba(4,120,87,0.2)`; completed → `--color-primary-dark` |
+| **Sidebar** | Active/hover colors updated; transition `background-color` 100ms |
+| **Header** | Customer header → `--color-primary-dark` (green) background with white text |
+| **Stat Cards** | Hover shadow elevation added; icon colors updated |
+| **Quick Action Cards** | Hover shadow transition added |
+| **OTP** | Focus/filled border uses `--color-primary-dark`; focus ring updated |
+| **Skeleton** | Background → `--color-border` |
+
+### Accessibility — Reduced Motion
+
+`prefers-reduced-motion: reduce` media query added per Appendix A:
+- All transitions/animation durations → 0ms
+- Skeleton pulse stops (static 0.4 opacity)
+- OTP shake animation removed
+- Button active transforms disabled
+
+### Owner Surface Changes
+
+- Welcome card gradient: violet `#6d28d9` → `--color-owner-accent-dark` (`#4338ca` indigo)
+- Summary card icon `.primary` → `--color-primary-dark`
+- All `--color-gray-*` references replaced in `owner.css`
+- Card/quick-action hover transitions added
+
+### Files Modified
+
+- `static/css/base.css` — token replacement + motion + component updates
+- `static/css/owner.css` — token references + transitions + gradient
+- `static/css/customer.css` — token references
+- `templates/404.html` — inline color tokens updated
+- `templates/customer/login.html`, `register.html` — inline color tokens updated
+- `templates/owner/login.html`, `register.html`, `dashboard.html` — inline color tokens updated
+- `templates/partials/_otp_verify.html` — inline color token updated
+
+### Test Results
+
+**70/70 tests passing** (accounts test suite). No functional regressions — this is a pure CSS/visual change. Run with:
+```
+python manage.py test accounts --settings=pharmacy_marketplace.settings.test
+```
 
 ---
 
