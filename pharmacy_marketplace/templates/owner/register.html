@@ -46,6 +46,7 @@
         <div class="step-item"><div class="step-circle current">4</div><span class="step-label">{% trans "Review" %}</span></div>
       </nav>
 
+      <div class="step-content">
       <div class="review-summary">
         <div class="card mb-4">
           <h3 style="font-size:var(--text-sm);color:var(--color-muted);margin-bottom:var(--space-2);">{% trans "Account Information" %}</h3>
@@ -80,6 +81,7 @@
           {% trans "Create Account & Verify Phone" %}
         </button>
       </form>
+      </div>
 
     {% elif step == 2 %}
       {# ── Step 3: Location ── #}
@@ -95,6 +97,7 @@
         <div class="step-item"><div class="step-circle upcoming">4</div><span class="step-label">{% trans "Review" %}</span></div>
       </nav>
 
+      <div class="step-content">
       {% if errors.location %}
         {% include "partials/_alert.html" with type="error" message=errors.location dismissible=True %}
       {% endif %}
@@ -174,6 +177,7 @@
         else { var ci = setInterval(function() { if (typeof L !== 'undefined') { clearInterval(ci); initMap(); } }, 300); }
       });
       </script>
+      </div>
 
     {% elif step == 1 %}
       {# ── Step 2: Pharmacy Details ── #}
@@ -189,6 +193,7 @@
         <div class="step-item"><div class="step-circle upcoming">4</div><span class="step-label">{% trans "Review" %}</span></div>
       </nav>
 
+      <div class="step-content">
       {% if errors.general %}
         {% include "partials/_alert.html" with type="error" message=errors.general dismissible=True %}
       {% endif %}
@@ -304,6 +309,7 @@
           </button>
         </div>
       </form>
+      </div>
 
     {% else %}
       {# ── Step 1: Account Information ── #}
@@ -319,6 +325,7 @@
         <div class="step-item"><div class="step-circle upcoming">4</div><span class="step-label">{% trans "Review" %}</span></div>
       </nav>
 
+      <div class="step-content">
       {% if errors.general %}
         {% include "partials/_alert.html" with type="error" message=errors.general dismissible=True %}
       {% endif %}
@@ -389,6 +396,7 @@
           {% trans "Continue to Pharmacy Details" %}
         </button>
       </form>
+      </div>
     {% endif %}
 
     <div class="mt-4 text-center">

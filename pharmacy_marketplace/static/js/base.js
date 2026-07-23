@@ -103,9 +103,12 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.alert[data-auto-dismiss]').forEach(function (alert) {
     const seconds = parseInt(alert.getAttribute('data-auto-dismiss'), 10) || 5000;
     setTimeout(function () {
-      alert.style.transition = 'opacity 0.3s';
+      const root = document.documentElement;
+      const duration = getComputedStyle(root).getPropertyValue('--transition-base').trim() || '200ms';
+      const easing = getComputedStyle(root).getPropertyValue('--easing-out').trim() || 'ease-out';
+      alert.style.transition = 'opacity ' + duration + ' ' + easing;
       alert.style.opacity = '0';
-      setTimeout(function () { alert.remove(); }, 300);
+      setTimeout(function () { alert.remove(); }, parseInt(duration, 10));
     }, seconds);
   });
 

@@ -193,7 +193,7 @@ Micro-interactions are used sparingly and deliberately — only to confirm user 
 
 **Reduced motion:** When `prefers-reduced-motion: reduce` is active:
 - All `--transition-*` durations go to `0ms` (instant)
-- Skeleton pulse animation becomes static (opacity: 1)
+- Skeleton pulse animation becomes static (opacity: 0.4 — dimmed to read as "content loading, motion disabled")
 - Shake animations are removed
 - All transforms that trigger on hover/press are disabled
 

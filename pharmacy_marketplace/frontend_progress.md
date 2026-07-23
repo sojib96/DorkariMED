@@ -92,6 +92,10 @@ Complete replacement of the blue-led palette with a green-led, warm-neutral pale
 python manage.py test accounts --settings=pharmacy_marketplace.settings.test
 ```
 
+### Tech Lead Cleanup Note — Hover-Elevation DRY
+
+The same `transition: box-shadow var(--transition-base) var(--easing-standard)` + `:hover { box-shadow: var(--shadow-md); }` pattern is repeated 5× across `base.css` and `owner.css` (`.card`, `.stat-card`, `.quick-action-card`, `.summary-card`, and the second `.quick-action-card`). Extract into a reusable utility class (e.g., `.elevate-on-hover`) early in Phase 2 to avoid further duplication as new card-like components are added. Also consider re-consolidating `.site-header`/`.owner-header`/`.admin-header` layout props (padding, height, display, align-items) which were duplicated when the shared selector was split.
+
 ---
 
 ## F1-04: Customer Registration (Web)

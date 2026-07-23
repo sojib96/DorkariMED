@@ -294,7 +294,7 @@ main {
   outline: 3px solid var(--color-primary-darker);
   outline-offset: 2px;
   box-shadow: 0 0 0 3px rgba(6, 95, 70, 0.2);
-  transition: box-shadow var(--transition-fast) var(--easing-standard);
+  transition: box-shadow 150ms var(--easing-standard);
 }
 .btn:active {
   transform: scale(0.97);
@@ -317,7 +317,7 @@ main {
 
 .btn-secondary {
   background: var(--color-card);
-  color: var(--color-heading);
+  color: var(--color-secondary-text);
   border: 1px solid var(--color-border);
 }
 .btn-secondary:hover {
@@ -426,6 +426,17 @@ main {
   font-size: var(--text-sm);
   color: var(--color-danger);
   margin-top: var(--space-1);
+  animation: field-error-enter var(--transition-base) var(--easing-out);
+}
+@keyframes field-error-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Password input with toggle ──────────────────────────────────────────────── */
@@ -506,6 +517,27 @@ select.input {
   font-size: var(--text-sm);
   line-height: 1.4;
   margin-bottom: var(--space-4);
+  animation: alert-enter var(--transition-slow) var(--easing-out);
+}
+@keyframes alert-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* Alpine x-transition:leave classes for dismissible alerts */
+.alert-leave {
+  transition: opacity var(--transition-base) var(--easing-out);
+}
+.alert-leave-start {
+  opacity: 1;
+}
+.alert-leave-end {
+  opacity: 0;
 }
 .alert-success {
   background: var(--color-success-light);
@@ -1021,6 +1053,15 @@ select.input {
 .justify-center { justify-content: center; }
 .gap-2 { gap: var(--space-2); }
 .gap-4 { gap: var(--space-4); }
+
+/* ── Step Content Fade ───────────────────────────────────────────────────────── */
+.step-content {
+  animation: step-content-enter var(--transition-slow) var(--easing-out);
+}
+@keyframes step-content-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
 /* ── Reduced Motion ──────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
